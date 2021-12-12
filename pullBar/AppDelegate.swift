@@ -24,7 +24,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let ghClient = GitHubClient()
     var statusBarItem: NSStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let menu: NSMenu = NSMenu()
+
     var preferencesWindow: NSWindow!
+    var aboutWindow: NSWindow!
     
     var timer: Timer? = nil
     
@@ -112,7 +114,9 @@ extension AppDelegate {
             if let assignedPulls = assignedPulls, let createdPulls = createdPulls, let reviewRequestedPulls = reviewRequestedPulls {
 
                 if self.showAssigned {
-                    self.menu.addItem(NSMenuItem(title: "Assigned", action: nil, keyEquivalent: ""))
+                    if !assignedPulls.isEmpty {
+                        self.menu.addItem(NSMenuItem(title: "Assigned", action: nil, keyEquivalent: ""))
+                    }
                     for pull in assignedPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
@@ -120,7 +124,9 @@ extension AppDelegate {
                 }
                 
                 if self.showCreated {
-                    self.menu.addItem(NSMenuItem(title: "Created", action: nil, keyEquivalent: ""))
+                    if !createdPulls.isEmpty {
+                        self.menu.addItem(NSMenuItem(title: "Created", action: nil, keyEquivalent: ""))
+                    }
                     for pull in createdPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
@@ -128,7 +134,9 @@ extension AppDelegate {
                 }
 
                 if self.showRequested {
-                    self.menu.addItem(NSMenuItem(title: "Review Requested", action: nil, keyEquivalent: ""))
+                    if !reviewRequestedPulls.isEmpty {
+                        self.menu.addItem(NSMenuItem(title: "Review Requested", action: nil, keyEquivalent: ""))
+                    }
                     for pull in reviewRequestedPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
@@ -138,6 +146,7 @@ extension AppDelegate {
                 self.menu.addItem(withTitle: "Refresh", action: #selector(self.refreshMenu), keyEquivalent: "R")
                 self.menu.addItem(.separator())
                 self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: ",")
+                self.menu.addItem(withTitle: "About PullBar", action: #selector(self.openAboutWindow), keyEquivalent: "")
                 self.menu.addItem(withTitle: "Quit", action: #selector(self.quit), keyEquivalent: "q")
             }
             
@@ -161,7 +170,7 @@ extension AppDelegate {
         issueItemTitle.appendNewLine()
         
         issueItemTitle
-            .appendIcon(iconName: "check-circle-gray")
+            .appendIcon(iconName: "check-circle")
             .appendString(string: " " + String(pull.node.reviews.totalCount), color: "#888888")
             .appendSeparator()
             .appendString(string: "+" + String(pull.node.additions ?? 0), color: "#A3BE8C")
@@ -211,6 +220,33 @@ extension AppDelegate {
         
         preferencesWindow.center()
         preferencesWindow.orderFrontRegardless()
+    }
+    
+    @objc
+    func openAboutWindow(_: NSStatusBarButton?) {
+        NSLog("Open about window")
+        let contentView = AboutView()
+        if aboutWindow != nil {
+            aboutWindow.close()
+        }
+        aboutWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 240, height: 340),
+            styleMask: [.closable, .titled],
+            backing: .buffered,
+            defer: false
+        )
+        
+        aboutWindow.title = "About"
+        aboutWindow.contentView = NSHostingView(rootView: contentView)
+        aboutWindow.makeKeyAndOrderFront(nil)
+        // allow the preference window can be focused automatically when opened
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        
+        let controller = NSWindowController(window: aboutWindow)
+        controller.showWindow(self)
+        
+        aboutWindow.center()
+        aboutWindow.orderFrontRegardless()
     }
     
     @objc

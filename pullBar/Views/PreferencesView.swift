@@ -24,16 +24,17 @@ struct PreferencesView: View {
     var body: some View {
         Form {
             Section {
+                VStack(alignment: .leading) {
                 HStack(alignment: .center) {
-                    Text("GitHub Username:").frame(width: 120, alignment: .trailing)
+                    Text("GitHub username:").frame(width: 120, alignment: .trailing)
                     TextField("", text: $githubUsername)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 340)
+                        .frame(width: 200)
                 }
                 
                 HStack(alignment: .center) {
                     Text("GitHub token:").frame(width: 120, alignment: .trailing)
-                    SecureField("ghp...", text: $githubToken)
+                    SecureField("", text: $githubToken)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 340)
                 }
@@ -63,6 +64,7 @@ struct PreferencesView: View {
                     }).labelsHidden()
                         .pickerStyle(MenuPickerStyle())
                         .frame(width: 100)
+                }
                 }
             }
         }

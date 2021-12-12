@@ -33,6 +33,7 @@ public class GitHubClient {
         ] as [String: Any]
         
         AF.request("https://api.github.com/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+            .validate(statusCode: 200..<300)
             .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
                 switch response.result {
                 case .success(let prs):
@@ -62,6 +63,7 @@ public class GitHubClient {
         ] as [String: Any]
         
         AF.request("https://api.github.com/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+            .validate(statusCode: 200..<300)
             .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
                 switch response.result {
                 case .success(let prs):
@@ -75,10 +77,6 @@ public class GitHubClient {
     
     func getReviewRequestedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
         
-        if (githubUsername == "" || githubToken == "") {
-            completion([Edge]())
-        }
-        
         let headers: HTTPHeaders = [
             .authorization(username: githubUsername, password: githubToken),
             .accept("application/json")
@@ -91,6 +89,7 @@ public class GitHubClient {
         ] as [String: Any]
         
         AF.request("https://api.github.com/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+            .validate(statusCode: 200..<300)
             .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
                 switch response.result {
                 case .success(let prs):

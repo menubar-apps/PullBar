@@ -28,7 +28,7 @@ extension NSMutableAttributedString {
     
     @discardableResult
     func appendIcon(iconName: String) -> NSMutableAttributedString {
-        let image = NSImage(named: iconName)
+        let image = NSImage(named: iconName)?.tint(color: NSColor.gray)
         image?.size = NSSize(width: 12, height: 12)
         let image1Attachment = NSTextAttachment()
         image1Attachment.attachmentCell = NSTextAttachmentCell(imageCell: image)
@@ -37,6 +37,7 @@ extension NSMutableAttributedString {
         let range = NSMakeRange(0,image1String.length)
         image1String.addAttribute(NSAttributedString.Key.baselineOffset, value: -1.0, range: range)
         self.append(image1String)
+        self.appendString(string: " ")
         
         return self
     }
