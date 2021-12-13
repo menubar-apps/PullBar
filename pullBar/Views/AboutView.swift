@@ -16,7 +16,7 @@ struct AboutView: View {
         VStack {
             Image(nsImage: NSImage(named: "AppIcon")!)
             Text("PullBar").font(.title)
-            Text("By Pavel Makhov").font(.caption)
+            Text("by Pavel Makhov").font(.caption)
             Text("Version " + currentVersion).font(.footnote)
             Divider()
             Link("PullBar on GitHub", destination: URL(string: "https://github.com/menubar-apps-for-devs/PullBar")!)

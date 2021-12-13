@@ -21,6 +21,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @Default(.refreshRate) var refreshRate
     
+    @Default(.githubUsername) var githubUsername
+    @Default(.githubToken) var githubToken
+
     let ghClient = GitHubClient()
     var statusBarItem: NSStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let menu: NSMenu = NSMenu()
@@ -78,9 +81,19 @@ extension AppDelegate {
     func refreshMenu() {
         NSLog("Refreshing menu")
         self.menu.removeAllItems()
+        
+        if (githubUsername == "" || githubToken == "") {
+            addMenuFooterItems()
+            return
+        }
+        
+        
         var assignedPulls: [Edge]? = []
         var createdPulls: [Edge]? = []
         var reviewRequestedPulls: [Edge]? = []
+        
+        
+        
         
         let group = DispatchGroup()
         
@@ -143,11 +156,7 @@ extension AppDelegate {
                     self.menu.addItem(.separator())
                 }
                 
-                self.menu.addItem(withTitle: "Refresh", action: #selector(self.refreshMenu), keyEquivalent: "R")
-                self.menu.addItem(.separator())
-                self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: ",")
-                self.menu.addItem(withTitle: "About PullBar", action: #selector(self.openAboutWindow), keyEquivalent: "")
-                self.menu.addItem(withTitle: "Quit", action: #selector(self.quit), keyEquivalent: "q")
+                self.addMenuFooterItems()
             }
             
         }
@@ -195,6 +204,14 @@ extension AppDelegate {
         return issueItem
     }
     
+    func addMenuFooterItems() {
+        self.menu.addItem(withTitle: "Refresh", action: #selector(self.refreshMenu), keyEquivalent: "R")
+        self.menu.addItem(.separator())
+        self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: ",")
+        self.menu.addItem(withTitle: "About PullBar", action: #selector(self.openAboutWindow), keyEquivalent: "")
+        self.menu.addItem(withTitle: "Quit", action: #selector(self.quit), keyEquivalent: "q")
+    }
+    
     @objc
     func openPrefecencesWindow(_: NSStatusBarButton?) {
         NSLog("Open preferences window")
@@ -212,6 +229,8 @@ extension AppDelegate {
         preferencesWindow.title = "Preferences"
         preferencesWindow.contentView = NSHostingView(rootView: contentView)
         preferencesWindow.makeKeyAndOrderFront(nil)
+        preferencesWindow.styleMask.remove(.resizable)
+
         // allow the preference window can be focused automatically when opened
         NSApplication.shared.activate(ignoringOtherApps: true)
         
@@ -239,6 +258,8 @@ extension AppDelegate {
         aboutWindow.title = "About"
         aboutWindow.contentView = NSHostingView(rootView: contentView)
         aboutWindow.makeKeyAndOrderFront(nil)
+        aboutWindow.styleMask.remove(.resizable)
+
         // allow the preference window can be focused automatically when opened
         NSApplication.shared.activate(ignoringOtherApps: true)
         
