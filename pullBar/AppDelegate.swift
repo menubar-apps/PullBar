@@ -177,9 +177,9 @@ extension AppDelegate {
             .appendString(string: pull.node.author.login, color: "#888888")
         
         issueItemTitle.appendNewLine()
-        
+        let approvedByMe = pull.node.reviews.edges.contains{ $0.author.login == githubUsername }
         issueItemTitle
-            .appendIcon(iconName: "check-circle")
+            .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor.green : NSColor.gray)
             .appendString(string: " " + String(pull.node.reviews.totalCount), color: "#888888")
             .appendSeparator()
             .appendString(string: "+" + String(pull.node.additions ?? 0), color: "#A3BE8C")

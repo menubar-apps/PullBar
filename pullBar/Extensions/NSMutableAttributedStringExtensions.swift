@@ -27,8 +27,8 @@ extension NSMutableAttributedString {
     }
     
     @discardableResult
-    func appendIcon(iconName: String) -> NSMutableAttributedString {
-        let image = NSImage(named: iconName)?.tint(color: NSColor.gray)
+    func appendIcon(iconName: String, color: NSColor = NSColor.gray) -> NSMutableAttributedString {
+        let image = NSImage(named: iconName)?.tint(color: color)
         image?.size = NSSize(width: 12, height: 12)
         let image1Attachment = NSTextAttachment()
         image1Attachment.attachmentCell = NSTextAttachmentCell(imageCell: image)

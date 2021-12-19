@@ -75,11 +75,27 @@ struct Pull: Codable {
     }
 }
 
+//edges {
+//    node {
+//      author {
+//        login
+//      }
+//    }
 struct Review: Codable {
     var totalCount: Int
+    var edges: [UserEdge]
     
     enum CodingKeys: String, CodingKey {
         case totalCount
+        case edges
+    }
+}
+
+struct UserEdge: Codable {
+    var author: User
+    
+    enum CondigKeys: String, CodingKey {
+        case author
     }
 }
 
