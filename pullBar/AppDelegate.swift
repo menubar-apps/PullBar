@@ -177,9 +177,9 @@ extension AppDelegate {
             .appendString(string: pull.node.author.login, color: "#888888")
         
         issueItemTitle.appendNewLine()
-        let approvedByMe = pull.node.reviews.edges.contains{ $0.author.login == githubUsername }
+        let approvedByMe = pull.node.reviews.edges.contains{ $0.node.author.login == githubUsername }
         issueItemTitle
-            .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor.green : NSColor.gray)
+            .appendIcon(iconName: "check-circle", color: approvedByMe ? hexStringToUIColor(hex: "#A3BE8C") : NSColor.gray)
             .appendString(string: " " + String(pull.node.reviews.totalCount), color: "#888888")
             .appendSeparator()
             .appendString(string: "+" + String(pull.node.additions ?? 0), color: "#A3BE8C")
@@ -189,8 +189,12 @@ extension AppDelegate {
             .appendString(string: pull.node.createdAt.getElapsedInterval(), color: "#888888")
 
         if showAvatar {
-            let imageURL = pull.node.author.avatarUrl
-            var image = NSImage.imageFromUrl(fromURL: imageURL) ?? NSImage(named: "person")!
+            var image = NSImage()
+            if let imageURL = pull.node.author.avatarUrl {
+                image = NSImage.imageFromUrl(fromURL: imageURL) ?? NSImage(named: "person")!
+            } else {
+                image = NSImage(named: "person")!
+            }
             image.cacheMode = NSImage.CacheMode.always
             if ((image.size.height != 36) || (image.size.width != 36)) {
                 image = image.resized(to: NSSize(width: 36.0, height: 36.0))!

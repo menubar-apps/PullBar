@@ -92,16 +92,24 @@ struct Review: Codable {
 }
 
 struct UserEdge: Codable {
-    var author: User
+    var node: UserNode
     
     enum CondigKeys: String, CodingKey {
+        case node
+    }
+}
+
+struct UserNode: Codable {
+    var author: User
+    
+    enum CodingKeys: String, CodingKey {
         case author
     }
 }
 
 struct User: Codable {
     var login: String
-    var avatarUrl: URL
+    var avatarUrl: URL?
     
     enum CodingKeys: String, CodingKey {
         case login

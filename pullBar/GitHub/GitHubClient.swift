@@ -98,7 +98,7 @@ public class GitHubClient {
                 case .success(let prs):
                     completion(prs.data.search.edges)
                 case .failure(let error):
-                    print(error)
+                    print(error.responseCode)
                     completion([Edge]())
                 }
             }

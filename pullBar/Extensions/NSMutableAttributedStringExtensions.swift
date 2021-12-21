@@ -57,7 +57,7 @@ extension NSMutableAttributedString {
 }
 
 
-func hexStringToUIColor (hex:String) -> NSColor {
+func hexStringToUIColor (hex: String) -> NSColor {
     var cString:String = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
 
     if (cString.hasPrefix("#")) {
