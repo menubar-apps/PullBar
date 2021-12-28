@@ -93,8 +93,6 @@ extension AppDelegate {
         var reviewRequestedPulls: [Edge]? = []
         
         
-        
-        
         let group = DispatchGroup()
         
         if showAssigned {
@@ -126,30 +124,24 @@ extension AppDelegate {
             
             if let assignedPulls = assignedPulls, let createdPulls = createdPulls, let reviewRequestedPulls = reviewRequestedPulls {
 
-                if self.showAssigned {
-                    if !assignedPulls.isEmpty {
-                        self.menu.addItem(NSMenuItem(title: "Assigned", action: nil, keyEquivalent: ""))
-                    }
+                if self.showAssigned && !assignedPulls.isEmpty {
+                    self.menu.addItem(NSMenuItem(title: "Assigned", action: nil, keyEquivalent: ""))
                     for pull in assignedPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
                     self.menu.addItem(.separator())
                 }
                 
-                if self.showCreated {
-                    if !createdPulls.isEmpty {
-                        self.menu.addItem(NSMenuItem(title: "Created", action: nil, keyEquivalent: ""))
-                    }
+                if self.showCreated && !createdPulls.isEmpty {
+                    self.menu.addItem(NSMenuItem(title: "Created", action: nil, keyEquivalent: ""))
                     for pull in createdPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
                     self.menu.addItem(.separator())
                 }
 
-                if self.showRequested {
-                    if !reviewRequestedPulls.isEmpty {
-                        self.menu.addItem(NSMenuItem(title: "Review Requested", action: nil, keyEquivalent: ""))
-                    }
+                if self.showRequested && !reviewRequestedPulls.isEmpty {
+                    self.menu.addItem(NSMenuItem(title: "Review Requested", action: nil, keyEquivalent: ""))
                     for pull in reviewRequestedPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
@@ -158,12 +150,12 @@ extension AppDelegate {
                 
                 self.addMenuFooterItems()
             }
-            
         }
     }
     
     func createMenuItem(pull: Edge) -> NSMenuItem {
         let issueItem = NSMenuItem(title: "", action: #selector(self.openLink), keyEquivalent: "")
+        
         let issueItemTitle = NSMutableAttributedString(string: pull.node.title)
             .appendString(string: " #" +  String(pull.node.number), color: "#888888")
         
@@ -177,9 +169,10 @@ extension AppDelegate {
             .appendString(string: pull.node.author.login, color: "#888888")
         
         issueItemTitle.appendNewLine()
+        
         let approvedByMe = pull.node.reviews.edges.contains{ $0.node.author.login == githubUsername }
         issueItemTitle
-            .appendIcon(iconName: "check-circle", color: approvedByMe ? hexStringToUIColor(hex: "#A3BE8C") : NSColor.gray)
+            .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor(hex: "#A3BE8C") : NSColor.gray)
             .appendString(string: " " + String(pull.node.reviews.totalCount), color: "#888888")
             .appendSeparator()
             .appendString(string: "+" + String(pull.node.additions ?? 0), color: "#A3BE8C")
@@ -297,6 +290,5 @@ extension AppDelegate {
         NSLog("User click Quit")
         NSApplication.shared.terminate(self)
     }
-    
 
 }

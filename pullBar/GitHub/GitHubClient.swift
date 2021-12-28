@@ -39,6 +39,7 @@ public class GitHubClient {
                 case .success(let prs):
                     completion(prs.data.search.edges)
                 case .failure(let error):
+                    sendNotification(body: error.localizedDescription)
                     completion([Edge]())
                     print(error)
                 }
@@ -69,6 +70,7 @@ public class GitHubClient {
                 case .success(let prs):
                     completion(prs.data.search.edges)
                 case .failure(let error):
+                    sendNotification(body: error.localizedDescription)
                     print(error)
                     completion([Edge]())
                 }
@@ -99,6 +101,7 @@ public class GitHubClient {
                     completion(prs.data.search.edges)
                 case .failure(let error):
                     print(error.responseCode)
+                    sendNotification(body: error.localizedDescription)
                     completion([Edge]())
                 }
             }

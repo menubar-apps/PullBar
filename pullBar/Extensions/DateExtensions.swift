@@ -14,23 +14,17 @@ extension Date {
         let interval = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: self, to: Date())
         
         if let year = interval.year, year > 0 {
-            return year == 1 ? "\(year)" + " " + "year" :
-                "\(year)" + " " + "years ago"
+            return "\(year) year\(year == 1 ? "" : "s") ago"
         } else if let month = interval.month, month > 0 {
-            return month == 1 ? "\(month)" + " " + "month" :
-                "\(month)" + " " + "months ago"
+            return "\(month) month\(month == 1 ? "" : "s") ago"
         } else if let day = interval.day, day > 0 {
-            return day == 1 ? "\(day)" + " " + "day" :
-                "\(day)" + " " + "days ago"
+            return "\(day) day\(day == 1 ? "" : "s") ago"
         } else if let hour = interval.hour, hour > 0 {
-            return hour == 1 ? "\(hour)" + " " + "hour" :
-                "\(hour)" + " " + "hours ago"
+            return "\(hour) hour\(hour == 1 ? "" : "s") ago"
         } else if let minute = interval.minute, minute > 0 {
-            return minute == 1 ? "\(minute)" + " " + "minute" :
-                "\(minute)" + " " + "minutes ago"
+            return "\(minute) minute\(minute == 1 ? "" : "s") ago"
         } else if let second = interval.second, second > 0 {
-            return second == 1 ? "\(second)" + " " + "second" :
-                "\(second)" + " " + "seconds age"
+            return "\(second) second\(second == 1 ? "" : "s") ago"
         } else {
             return "a moment ago"
         }

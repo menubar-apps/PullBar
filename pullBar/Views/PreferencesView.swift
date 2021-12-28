@@ -25,46 +25,46 @@ struct PreferencesView: View {
         Form {
             Section {
                 VStack(alignment: .leading) {
-                HStack(alignment: .center) {
-                    Text("GitHub username:").frame(width: 120, alignment: .trailing)
-                    TextField("", text: $githubUsername)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 200)
-                }
-                
-                HStack(alignment: .center) {
-                    Text("GitHub token:").frame(width: 120, alignment: .trailing)
-                    SecureField("", text: $githubToken)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 340)
-                }
-                Divider()
-                HStack(alignment: .center) {
-                    Text("Show pull requests:").frame(width: 120, alignment: .trailing)
-                    VStack(alignment: .leading){
-                        Toggle("assigned", isOn: $showAssigned)
-                        Toggle("created", isOn: $showCreated)
-                        Toggle("review requested", isOn: $showRequested)
+                    HStack(alignment: .center) {
+                        Text("GitHub username:").frame(width: 120, alignment: .trailing)
+                        TextField("", text: $githubUsername)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 200)
                     }
-                }
-                
-                HStack(alignment: .center) {
-                    Text("Show avatar:").frame(width: 120, alignment: .trailing)
-                    Toggle("", isOn: $showAvatar)
-                }
-                
-                HStack(alignment: .center) {
-                    Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
-                    Picker("", selection: $refreshRate, content: {
-                        Text("1 minute").tag(1)
-                        Text("5 minutes").tag(5)
-                        Text("10 minutes").tag(10)
-                        Text("15 minutes").tag(15)
-                        Text("30 minutes").tag(30)
-                    }).labelsHidden()
-                        .pickerStyle(MenuPickerStyle())
-                        .frame(width: 100)
-                }
+                    
+                    HStack(alignment: .center) {
+                        Text("GitHub token:").frame(width: 120, alignment: .trailing)
+                        SecureField("", text: $githubToken)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 340)
+                    }
+                    Divider()
+                    HStack(alignment: .center) {
+                        Text("Show pull requests:").frame(width: 120, alignment: .trailing)
+                        VStack(alignment: .leading){
+                            Toggle("assigned", isOn: $showAssigned)
+                            Toggle("created", isOn: $showCreated)
+                            Toggle("review requested", isOn: $showRequested)
+                        }
+                    }
+                    
+                    HStack(alignment: .center) {
+                        Text("Show avatar:").frame(width: 120, alignment: .trailing)
+                        Toggle("", isOn: $showAvatar)
+                    }
+                    
+                    HStack(alignment: .center) {
+                        Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
+                        Picker("", selection: $refreshRate, content: {
+                            Text("1 minute").tag(1)
+                            Text("5 minutes").tag(5)
+                            Text("10 minutes").tag(10)
+                            Text("15 minutes").tag(15)
+                            Text("30 minutes").tag(30)
+                        }).labelsHidden()
+                            .pickerStyle(MenuPickerStyle())
+                            .frame(width: 100)
+                    }
                 }
             }
         }

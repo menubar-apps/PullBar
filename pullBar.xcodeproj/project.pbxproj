@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		769F4E1B2765A2B900594911 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E1A2765A2B900594911 /* AboutView.swift */; };
+		769F4E1D2775595E00594911 /* NSColorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E1C2775595E00594911 /* NSColorExtensions.swift */; };
+		769F4E7B277B97B300594911 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7A277B97B300594911 /* Notifications.swift */; };
 		8C55444B274AD7B20079CA42 /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C55444A274AD7B20079CA42 /* DateExtensions.swift */; };
 		8C55444D274AD9E00079CA42 /* NSImageExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C55444C274AD9E00079CA42 /* NSImageExtensions.swift */; };
 		8CECBBE32742AAF900A2802D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CECBBE22742AAF900A2802D /* AppDelegate.swift */; };
@@ -24,6 +26,8 @@
 
 /* Begin PBXFileReference section */
 		769F4E1A2765A2B900594911 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		769F4E1C2775595E00594911 /* NSColorExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSColorExtensions.swift; sourceTree = "<group>"; };
+		769F4E7A277B97B300594911 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
 		8C55444A274AD7B20079CA42 /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
 		8C55444C274AD9E00079CA42 /* NSImageExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSImageExtensions.swift; sourceTree = "<group>"; };
 		8CECBBDF2742AAF800A2802D /* pullBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pullBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -77,6 +81,7 @@
 				8CECBBE62742AAFB00A2802D /* Assets.xcassets */,
 				8CECBBE82742AAFB00A2802D /* Main.storyboard */,
 				8CECBBEB2742AAFB00A2802D /* pullBar.entitlements */,
+				769F4E7A277B97B300594911 /* Notifications.swift */,
 			);
 			path = pullBar;
 			sourceTree = "<group>";
@@ -97,6 +102,7 @@
 				8CECBBFD2742AC0800A2802D /* DefaultsExtensions.swift */,
 				8C55444A274AD7B20079CA42 /* DateExtensions.swift */,
 				8C55444C274AD9E00079CA42 /* NSImageExtensions.swift */,
+				769F4E1C2775595E00594911 /* NSColorExtensions.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -190,8 +196,10 @@
 			files = (
 				8C55444B274AD7B20079CA42 /* DateExtensions.swift in Sources */,
 				8CECBC022742B3A000A2802D /* PreferencesView.swift in Sources */,
+				769F4E7B277B97B300594911 /* Notifications.swift in Sources */,
 				8CECBBE32742AAF900A2802D /* AppDelegate.swift in Sources */,
 				8CECBBF52742AB3F00A2802D /* GitHubDtos.swift in Sources */,
+				769F4E1D2775595E00594911 /* NSColorExtensions.swift in Sources */,
 				769F4E1B2765A2B900594911 /* AboutView.swift in Sources */,
 				8CECBC0927436C2200A2802D /* NSMutableAttributedStringExtensions.swift in Sources */,
 				8CECBBF42742AB3F00A2802D /* GitHubClient.swift in Sources */,
@@ -341,6 +349,7 @@
 				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
@@ -368,6 +377,7 @@
 				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
