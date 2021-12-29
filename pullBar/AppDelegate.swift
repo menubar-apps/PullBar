@@ -156,7 +156,7 @@ extension AppDelegate {
     func createMenuItem(pull: Edge) -> NSMenuItem {
         let issueItem = NSMenuItem(title: "", action: #selector(self.openLink), keyEquivalent: "")
         
-        let issueItemTitle = NSMutableAttributedString(string: pull.node.title)
+        let issueItemTitle = NSMutableAttributedString(string: pull.node.title.trunc(length: 50))
             .appendString(string: " #" +  String(pull.node.number), color: "#888888")
         
         issueItemTitle.appendNewLine()
@@ -196,6 +196,7 @@ extension AppDelegate {
         }
         
         issueItem.attributedTitle = issueItemTitle
+        issueItem.toolTip = pull.node.title
         issueItem.representedObject = pull.node.url
         
         return issueItem

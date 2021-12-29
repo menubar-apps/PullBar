@@ -17,9 +17,9 @@ struct AboutView: View {
             Image(nsImage: NSImage(named: "AppIcon")!)
             Text("PullBar").font(.title)
             Text("by Pavel Makhov").font(.caption)
-            Text("Version " + currentVersion).font(.footnote)
+            Text("version " + currentVersion).font(.footnote)
             Divider()
-            Link("PullBar on GitHub", destination: URL(string: "https://github.com/menubar-apps-for-devs/PullBar")!)
+            Link("PullBar on GitHub", destination: URL(string: "https://github.com/menubar-apps/PullBar")!)
         }.padding()
     }
 }
