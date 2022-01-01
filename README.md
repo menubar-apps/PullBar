@@ -2,6 +2,7 @@
 
 <p align="center">
   <img alt="GitHub all releases" src="https://img.shields.io/github/downloads/menubar-apps/pullbar/total">
+  <img alt="GitHub top language" src="https://img.shields.io/github/languages/top/menubar-apps/pullbar">
 </p>
 
 GitHub Pull requests in your menu bar! Keep track of created, assigned and review requested Pull Requests:
