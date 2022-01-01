@@ -1,5 +1,9 @@
 # PullBar
 
+<p align="center">
+  <img alt="GitHub all releases" src="https://img.shields.io/github/downloads/menubar-apps/pullbar/total">
+</p>
+
 GitHub Pull requests in your menu bar! Keep track of created, assigned and review requested Pull Requests:
 
 <p align="center">
