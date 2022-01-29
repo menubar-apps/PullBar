@@ -8,7 +8,7 @@
 GitHub Pull requests in your menu bar! Keep track of created, assigned and review requested Pull Requests:
 
 <p align="center">
-  <img width="497" src="https://user-images.githubusercontent.com/9363150/147607879-e7330315-efaa-42e2-b74c-dd28b8b52253.png" alt="Screen Shot 2021-12-28 at 4 20 02 PM">
+  <img width="453" alt="Screen Shot 2022-01-28 at 7 52 35 PM" src="https://user-images.githubusercontent.com/9363150/151640176-ddd1e4e7-d05c-4ac4-857c-54b2271dd23a.png">
   </p>
 
 # Installation
