@@ -18,6 +18,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @Default(.showRequested) var showRequested
     
     @Default(.showAvatar) var showAvatar
+    @Default(.showChecks) var showChecks
     
     @Default(.refreshRate) var refreshRate
     
@@ -195,8 +196,40 @@ extension AppDelegate {
             issueItem.image = image
         }
         
+        
+        
+        if let commits = pull.node.commits {
+            issueItem.submenu = NSMenu()
+            for checkSuite in commits.nodes[0].commit.checkSuites.nodes {
+                
+                if checkSuite.checkRuns.nodes.count > 0 {
+                    issueItem.submenu?.addItem(withTitle: checkSuite.app?.name ?? "empty", action: nil, keyEquivalent: "")
+                }
+                for check in checkSuite.checkRuns.nodes {
+                    
+                    let buildItem = NSMenuItem(title: check.name, action: #selector(self.openLink), keyEquivalent: "")
+                    buildItem.representedObject = check.detailsUrl
+                    buildItem.toolTip = check.conclusion
+                    if check.conclusion  == "SUCCESS" {
+                        buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
+                    } else if check.conclusion  == "FAILURE" {
+                        buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
+                    } else if check.conclusion  == "ACTION_REQUIRED" {
+                        buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
+                    } else {
+                        buildItem.image = NSImage(named: "question")!.tint(color: NSColor(named: "yellow")!)
+                    }
+                    
+                    issueItem.submenu?.addItem(buildItem)
+                }
+            }
+        }
+        
+        
         issueItem.attributedTitle = issueItemTitle
-        issueItem.toolTip = pull.node.title
+        if pull.node.title.count > 50 {
+            issueItem.toolTip = pull.node.title
+        }
         issueItem.representedObject = pull.node.url
         
         return issueItem

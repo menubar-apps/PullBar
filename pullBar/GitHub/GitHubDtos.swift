@@ -60,6 +60,7 @@ struct Pull: Codable {
     var reviews: Review
     var author: User
     var repository: Repository
+    var commits: CommitsNodes?
     
     enum CodingKeys: String, CodingKey {
         case url
@@ -72,6 +73,7 @@ struct Pull: Codable {
         case reviews
         case author
         case repository
+        case commits
     }
 }
 
@@ -122,6 +124,78 @@ struct Repository: Codable {
     
     enum CodingKeys: String, CodingKey {
         case name
+    }
+}
+
+struct CommitsNodes: Codable {
+    var nodes: [Commit]
+    
+    enum CodingKeys: String, CodingKey {
+        case nodes
+    }
+}
+
+struct Commit: Codable {
+    var commit: CheckSuites
+    
+    enum CodingKeys: String, CodingKey {
+        case commit
+    }
+}
+
+struct CheckSuites: Codable {
+    var checkSuites: CheckSuitsNodes
+    
+    enum CodingKeys: String, CodingKey {
+        case checkSuites
+    }
+}
+
+
+struct CheckSuitsNodes: Codable {
+    var nodes: [CheckSuit]
+    
+    enum CodingKeys: String, CodingKey {
+        case nodes
+    }
+}
+
+struct App: Codable {
+    var name: String?
+    enum CodingKeys: String, CodingKey {
+        case name
+    }
+}
+
+struct CheckSuit: Codable {
+    var app: App?
+    var checkRuns: CheckRun
+    
+    enum CodingKeys: String, CodingKey {
+        case checkRuns
+        case app
+    }
+}
+
+struct CheckRun: Codable {
+    var totalCount: Int
+    var nodes: [Check]
+    
+    enum CodingKeys: String, CodingKey {
+        case totalCount
+        case nodes
+    }
+}
+
+struct Check: Codable {
+    var name: String
+    var conclusion: String?
+    var detailsUrl: URL
+    
+    enum CodingKeys: String, CodingKey {
+        case name
+        case conclusion
+        case detailsUrl
     }
 }
 

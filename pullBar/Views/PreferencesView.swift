@@ -18,6 +18,7 @@ struct PreferencesView: View {
     @Default(.showRequested) var showRequested
     
     @Default(.showAvatar) var showAvatar
+    @Default(.showChecks) var showChecks
     
     @Default(.refreshRate) var refreshRate
     
@@ -51,6 +52,11 @@ struct PreferencesView: View {
                     HStack(alignment: .center) {
                         Text("Show avatar:").frame(width: 120, alignment: .trailing)
                         Toggle("", isOn: $showAvatar)
+                    }
+
+                    HStack(alignment: .center) {
+                        Text("Show Checks:").frame(width: 120, alignment: .trailing)
+                        Toggle("", isOn: $showChecks)
                     }
                     
                     HStack(alignment: .center) {

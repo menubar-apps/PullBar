@@ -36,17 +36,19 @@ extension NSImage {
     }
     
     func tint(color: NSColor) -> NSImage {
-        let image = self.copy() as! NSImage
-        image.lockFocus()
+        let newImage = NSImage(size: self.size)
+        newImage.lockFocus()
 
-        color.set()
+        // Draw with specified transparency
+        let imageRect = NSRect(origin: .zero, size: self.size)
+        self.draw(in: imageRect, from: imageRect, operation: .sourceOver, fraction: color.alphaComponent)
 
-        let imageRect = NSRect(origin: NSZeroPoint, size: image.size)
+        // Tint with color
+        color.withAlphaComponent(1).set()
         imageRect.fill(using: .sourceAtop)
 
-        image.unlockFocus()
-
-        return image
+        newImage.unlockFocus()
+        return newImage
     }
     
 }

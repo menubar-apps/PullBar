@@ -14,6 +14,8 @@ public class GitHubClient {
     @Default(.githubUsername) var githubUsername
     @Default(.githubToken) var githubToken
     
+    @Default(.showChecks) var showChecks
+    
     func getAssignedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
         
         if (githubUsername == "" || githubToken == "") {
@@ -100,7 +102,6 @@ public class GitHubClient {
                 case .success(let prs):
                     completion(prs.data.search.edges)
                 case .failure(let error):
-                    print(error.responseCode)
                     sendNotification(body: error.localizedDescription)
                     completion([Edge]())
                 }
@@ -108,43 +109,70 @@ public class GitHubClient {
     }
     
     private func buildGraphQlQuery(queryString: String) -> String {
+        
+        let commits = """
+        commits(last: 1) {
+            nodes {
+                commit {
+                    checkSuites(first: 10) {
+                        nodes {
+                            app {
+                                name
+                            }
+                            checkRuns(first: 10) {
+                                totalCount
+                                nodes {
+                                    name
+                                    conclusion
+                                    detailsUrl
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+        
         return """
         {
-          search(query: "\(queryString)", type: ISSUE, first: 30) {
-            issueCount
-            edges {
-              node {
-                ... on PullRequest {
-                  number
-                  createdAt
-                  updatedAt
-                  title
-                  headRefName
-                  url
-                  deletions
-                  additions
-                  author {
-                    login
-                    avatarUrl
-                  }
-                  repository {
-                    name
-                  }
-                  reviews(states: APPROVED, first: 10) {
-                    totalCount
-                    edges {
-                      node {
-                        author {
-                          login
+            search(query: "\(queryString)", type: ISSUE, first: 30) {
+                issueCount
+                edges {
+                    node {
+                        ... on PullRequest {
+                            number
+                            createdAt
+                            updatedAt
+                            title
+                            headRefName
+                            url
+                            deletions
+                            additions
+                            author {
+                                login
+                                avatarUrl
+                            }
+                            repository {
+                                name
+                            }
+                            reviews(states: APPROVED, first: 10) {
+                                totalCount
+                                edges {
+                                    node {
+                                        author {
+                                            login
+                                        }
+                                    }
+                                }
+                            }
+                            \(showChecks ? commits : "")
                         }
-                      }
                     }
-                  }
                 }
-              }
             }
-          }
         }
+
 
         """
     }
