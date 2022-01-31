@@ -199,7 +199,9 @@ extension AppDelegate {
         
         
         if let commits = pull.node.commits {
-            issueItem.submenu = NSMenu()
+            if commits.nodes[0].commit.checkSuites.nodes.count > 0 {
+                issueItem.submenu = NSMenu()
+            }
             for checkSuite in commits.nodes[0].commit.checkSuites.nodes {
                 
                 if checkSuite.checkRuns.nodes.count > 0 {
