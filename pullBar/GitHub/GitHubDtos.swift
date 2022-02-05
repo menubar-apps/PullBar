@@ -199,3 +199,23 @@ struct Check: Codable {
     }
 }
 
+struct LatestRelease: Codable {
+    
+    var name: String
+    var assets: [Asset]
+    
+    enum CodingKeys: String, CodingKey {
+        case name
+        case assets
+    }
+}
+
+struct Asset: Codable {
+    var name: String
+    var browserDownloadUrl: String
+    
+    enum CodingKeys: String, CodingKey {
+        case name
+        case browserDownloadUrl = "browser_download_url"
+    }
+}

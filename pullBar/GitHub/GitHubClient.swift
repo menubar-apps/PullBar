@@ -176,6 +176,32 @@ public class GitHubClient {
 
         """
     }
+    
+    func getLatestRelease(completion:@escaping (((LatestRelease?) -> Void))) -> Void {
+            let headers: HTTPHeaders = [
+                .authorization(username: githubUsername, password: githubToken),
+                .contentType("application/json"),
+                .accept("application/json")
+            ]
+            AF.request("https://api.github.com/repos/menubar-apps/PullBar/releases/latest",
+                       method: .get,
+                       encoding: JSONEncoding.default,
+                       headers: headers)
+                .validate(statusCode: 200..<300)
+                .responseDecodable(of: LatestRelease.self) { response in
+                    switch response.result {
+                    case .success(let latestRelease):
+                        completion(latestRelease)
+                    case .failure(let error):
+                        completion(nil)
+                        if let data = response.data {
+                            let json = String(data: data, encoding: String.Encoding.utf8)
+//                            print("Failure Response: \(json)")
+                        }
+                        sendNotification(body: error.localizedDescription)
+                    }
+                }
+        }
 }
 
 class GithubDecoder: JSONDecoder {
