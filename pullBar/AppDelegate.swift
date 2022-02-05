@@ -38,7 +38,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.windowClosed), name: NSWindow.willCloseNotification, object: nil)
         
         guard let statusButton = statusBarItem.button else { return }
-        statusButton.title = "hello"
         let icon = NSImage(named: "git-pull-request")
         let size = NSSize(width: 16, height: 16)
         icon?.isTemplate = true
@@ -158,29 +157,29 @@ extension AppDelegate {
         let issueItem = NSMenuItem(title: "", action: #selector(self.openLink), keyEquivalent: "")
         
         let issueItemTitle = NSMutableAttributedString(string: pull.node.title.trunc(length: 50))
-            .appendString(string: " #" +  String(pull.node.number), color: "#888888")
+            .appendString(string: " #" +  String(pull.node.number))
         
         issueItemTitle.appendNewLine()
 
         issueItemTitle
             .appendIcon(iconName: "repo")
-            .appendString(string: pull.node.repository.name, color: "#888888")
+            .appendString(string: pull.node.repository.name)
             .appendSeparator()
             .appendIcon(iconName: "person")
-            .appendString(string: pull.node.author.login, color: "#888888")
+            .appendString(string: pull.node.author.login)
         
         issueItemTitle.appendNewLine()
         
         let approvedByMe = pull.node.reviews.edges.contains{ $0.node.author.login == githubUsername }
         issueItemTitle
-            .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor(hex: "#A3BE8C") : NSColor.gray)
-            .appendString(string: " " + String(pull.node.reviews.totalCount), color: "#888888")
+            .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor(named: "green")! : NSColor.gray)
+            .appendString(string: " " + String(pull.node.reviews.totalCount))
             .appendSeparator()
-            .appendString(string: "+" + String(pull.node.additions ?? 0), color: "#A3BE8C")
-            .appendString(string: " -" + String(pull.node.deletions ?? 0), color: "#BF616A")
+            .appendString(string: "+" + String(pull.node.additions ?? 0), color: NSColor(named: "green")!)
+            .appendString(string: " -" + String(pull.node.deletions ?? 0), color: NSColor(named: "red")!)
             .appendSeparator()
             .appendIcon(iconName: "calendar")
-            .appendString(string: pull.node.createdAt.getElapsedInterval(), color: "#888888")
+            .appendString(string: pull.node.createdAt.getElapsedInterval())
 
         if showAvatar {
             var image = NSImage()
@@ -191,7 +190,7 @@ extension AppDelegate {
             }
             image.cacheMode = NSImage.CacheMode.always
             if ((image.size.height != 36) || (image.size.width != 36)) {
-                image = image.resized(to: NSSize(width: 36.0, height: 36.0))!
+                image.size = NSSize(width: 36.0, height: 36.0)
             }
             issueItem.image = image
         }
@@ -201,6 +200,9 @@ extension AppDelegate {
         if let commits = pull.node.commits {
             if commits.nodes[0].commit.checkSuites.nodes.count > 0 {
                 issueItem.submenu = NSMenu()
+                issueItemTitle
+                    .appendSeparator()
+                    .appendIcon(iconName: "checklist", color: NSColor.gray)
             }
             for checkSuite in commits.nodes[0].commit.checkSuites.nodes {
                 
@@ -214,12 +216,16 @@ extension AppDelegate {
                     buildItem.toolTip = check.conclusion
                     if check.conclusion  == "SUCCESS" {
                         buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
+                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
                     } else if check.conclusion  == "FAILURE" {
                         buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
+                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
                     } else if check.conclusion  == "ACTION_REQUIRED" {
                         buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
+                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
                     } else {
-                        buildItem.image = NSImage(named: "question")!.tint(color: NSColor(named: "yellow")!)
+                        buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
+                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
                     }
                     
                     issueItem.submenu?.addItem(buildItem)
@@ -238,11 +244,11 @@ extension AppDelegate {
     }
     
     func addMenuFooterItems() {
-        self.menu.addItem(withTitle: "Refresh", action: #selector(self.refreshMenu), keyEquivalent: "R")
+        self.menu.addItem(withTitle: "Refresh", action: #selector(self.refreshMenu), keyEquivalent: "")
         self.menu.addItem(.separator())
-        self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: ",")
+        self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: "")
         self.menu.addItem(withTitle: "About PullBar", action: #selector(self.openAboutWindow), keyEquivalent: "")
-        self.menu.addItem(withTitle: "Quit", action: #selector(self.quit), keyEquivalent: "q")
+        self.menu.addItem(withTitle: "Quit", action: #selector(self.quit), keyEquivalent: "")
     }
     
     @objc

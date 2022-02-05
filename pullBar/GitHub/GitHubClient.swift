@@ -23,7 +23,7 @@ public class GitHubClient {
         }
         
         let headers: HTTPHeaders = [
-            .authorization(username: githubUsername, password: githubToken),
+            .authorization(bearerToken: githubToken),
             .accept("application/json")
         ]
         
@@ -55,7 +55,7 @@ public class GitHubClient {
         }
         
         let headers: HTTPHeaders = [
-            .authorization(username: githubUsername, password: githubToken),
+            .authorization(bearerToken: githubToken),
             .accept("application/json")
         ]
         let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr author:\(githubUsername)")
@@ -85,7 +85,7 @@ public class GitHubClient {
         }
         
         let headers: HTTPHeaders = [
-            .authorization(username: githubUsername, password: githubToken),
+            .authorization(bearerToken: githubToken),
             .accept("application/json")
         ]
         let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr review-requested:\(githubUsername)")

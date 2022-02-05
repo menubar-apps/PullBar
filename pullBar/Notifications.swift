@@ -15,9 +15,6 @@ func sendNotification(body: String = "") {
   if body.count > 0 {
     content.body = body
   }
-  
-  // you can alse add a subtitle
-//  content.subtitle = "subtitle here... "
 
   let uuidString = UUID().uuidString
   let request = UNNotificationRequest(

@@ -18,9 +18,9 @@ extension NSMutableAttributedString {
     }
 
     @discardableResult
-    func appendString(string: String, color: String) -> NSMutableAttributedString {
+    func appendString(string: String, color: NSColor = NSColor.gray) -> NSMutableAttributedString {
         var attributes = [NSAttributedString.Key: AnyObject]()
-        attributes[.foregroundColor] = NSColor(hex: color)
+        attributes[.foregroundColor] = color
         self.append(NSMutableAttributedString(string: string, attributes: attributes))
         
         return self
