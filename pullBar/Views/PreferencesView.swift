@@ -35,9 +35,13 @@ struct PreferencesView: View {
                     
                     HStack(alignment: .center) {
                         Text("GitHub token:").frame(width: 120, alignment: .trailing)
-                        SecureField("", text: $githubToken)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 340)
+                        VStack(alignment: .leading) {
+                            SecureField("", text: $githubToken)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .frame(width: 340)
+                            Text("[Generate](https://github.com/settings/tokens/new?scopes=repo) a personal access token, make sure to select **repo** scope")
+                                .font(.footnote)
+                        }
                     }
                     Divider()
                     HStack(alignment: .center) {
