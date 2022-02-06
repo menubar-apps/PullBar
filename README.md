@@ -22,7 +22,7 @@ GitHub Pull requests in your menu bar! Keep track of created, assigned and revie
 
 # Installation
 
-[Download](https://github.com/menubar-apps/PullBar/releases/latest/download/pullBar.zip) the latest release, extract it and drag-and-drop to the Application folder.
+[Download](https://github.com/menubar-apps/PullBar/releases/latest/download/pullBar.1.0.dmg) the latest release, extract it and drag-and-drop to the Application folder.
 
 Then [generate](https://github.com/settings/tokens/new?scopes=repo) a github access token and paste it in the application preferences with your github username:
 
