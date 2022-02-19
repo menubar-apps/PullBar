@@ -11,13 +11,6 @@ import SwiftUI
 extension NSMutableAttributedString {
 
     @discardableResult
-    func appendString(string: String) -> NSMutableAttributedString {
-        self.append(NSMutableAttributedString(string: string))
-        
-        return self
-    }
-
-    @discardableResult
     func appendString(string: String, color: NSColor = NSColor.gray) -> NSMutableAttributedString {
         var attributes = [NSAttributedString.Key: AnyObject]()
         attributes[.foregroundColor] = color
