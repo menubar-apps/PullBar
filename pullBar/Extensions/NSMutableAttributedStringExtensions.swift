@@ -11,7 +11,7 @@ import SwiftUI
 extension NSMutableAttributedString {
 
     @discardableResult
-    func appendString(string: String, color: NSColor = NSColor.gray) -> NSMutableAttributedString {
+    func appendString(string: String, color: NSColor = NSColor.secondaryLabelColor) -> NSMutableAttributedString {
         var attributes = [NSAttributedString.Key: AnyObject]()
         attributes[.foregroundColor] = color
         self.append(NSMutableAttributedString(string: string, attributes: attributes))
@@ -20,7 +20,7 @@ extension NSMutableAttributedString {
     }
     
     @discardableResult
-    func appendIcon(iconName: String, color: NSColor = NSColor.gray) -> NSMutableAttributedString {
+    func appendIcon(iconName: String, color: NSColor = NSColor.secondaryLabelColor) -> NSMutableAttributedString {
         let image = NSImage(named: iconName)?.tint(color: color)
         image?.size = NSSize(width: 12, height: 12)
         let image1Attachment = NSTextAttachment()

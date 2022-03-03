@@ -172,7 +172,7 @@ extension AppDelegate {
         
         let approvedByMe = pull.node.reviews.edges.contains{ $0.node.author.login == githubUsername }
         issueItemTitle
-            .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor(named: "green")! : NSColor.gray)
+            .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor(named: "green")! : NSColor.secondaryLabelColor)
             .appendString(string: " " + String(pull.node.reviews.totalCount))
             .appendSeparator()
             .appendString(string: "+" + String(pull.node.additions ?? 0), color: NSColor(named: "green")!)
@@ -202,7 +202,7 @@ extension AppDelegate {
                 issueItem.submenu = NSMenu()
                 issueItemTitle
                     .appendSeparator()
-                    .appendIcon(iconName: "checklist", color: NSColor.gray)
+                    .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
             }
             for checkSuite in commits.nodes[0].commit.checkSuites.nodes {
                 
