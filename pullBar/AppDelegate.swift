@@ -9,6 +9,8 @@ import Cocoa
 import Defaults
 import SwiftUI
 import Foundation
+import EventKit
+
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {

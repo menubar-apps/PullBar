@@ -12,18 +12,19 @@ import Alamofire
 public class GitHubClient {
     
     @Default(.githubUsername) var githubUsername
-    @Default(.githubToken) var githubToken
+//    @Default(.githubToken) var githubToken
     
     @Default(.showChecks) var showChecks
-    
+    @KeychainStorage("githubToken") var githubTokenSec
+
     func getAssignedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
         
-        if (githubUsername == "" || githubToken == "") {
+        if (githubUsername == "" || githubTokenSec == "") {
             completion([Edge]())
         }
-        
+
         let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
+            .authorization(bearerToken: githubTokenSec),
             .accept("application/json")
         ]
         
@@ -50,12 +51,12 @@ public class GitHubClient {
     
     func getCreatedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
         
-        if (githubUsername == "" || githubToken == "") {
+        if (githubUsername == "" || githubTokenSec == "") {
             completion([Edge]())
         }
         
         let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
+            .authorization(bearerToken: githubTokenSec),
             .accept("application/json")
         ]
         let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr author:\(githubUsername)")
@@ -80,12 +81,12 @@ public class GitHubClient {
     }
     
     func getReviewRequestedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
-        if (githubUsername == "" || githubToken == "") {
+        if (githubUsername == "" || githubTokenSec == "") {
             completion([Edge]())
         }
         
         let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
+            .authorization(bearerToken: githubTokenSec),
             .accept("application/json")
         ]
         let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr review-requested:\(githubUsername)")
@@ -179,7 +180,7 @@ public class GitHubClient {
     
     func getLatestRelease(completion:@escaping (((LatestRelease?) -> Void))) -> Void {
             let headers: HTTPHeaders = [
-                .authorization(username: githubUsername, password: githubToken),
+                .authorization(username: githubUsername, password: githubTokenSec),
                 .contentType("application/json"),
                 .accept("application/json")
             ]

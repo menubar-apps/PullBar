@@ -10,6 +10,7 @@
 		769F4E1B2765A2B900594911 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E1A2765A2B900594911 /* AboutView.swift */; };
 		769F4E7B277B97B300594911 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7A277B97B300594911 /* Notifications.swift */; };
 		769F4E7D277CAFAD00594911 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7C277CAFAD00594911 /* StringExtensions.swift */; };
+		76C6A33227C7D98B00E1257B /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 76C6A33127C7D98B00E1257B /* KeychainAccess */; };
 		8C55444B274AD7B20079CA42 /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C55444A274AD7B20079CA42 /* DateExtensions.swift */; };
 		8C55444D274AD9E00079CA42 /* NSImageExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C55444C274AD9E00079CA42 /* NSImageExtensions.swift */; };
 		8CECBBE32742AAF900A2802D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CECBBE22742AAF900A2802D /* AppDelegate.swift */; };
@@ -49,6 +50,7 @@
 			files = (
 				8CECBBF82742ABDA00A2802D /* Defaults in Frameworks */,
 				8CECBBFB2742ABE600A2802D /* Alamofire in Frameworks */,
+				76C6A33227C7D98B00E1257B /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -135,6 +137,7 @@
 			packageProductDependencies = (
 				8CECBBF72742ABDA00A2802D /* Defaults */,
 				8CECBBFA2742ABE600A2802D /* Alamofire */,
+				76C6A33127C7D98B00E1257B /* KeychainAccess */,
 			);
 			productName = pullBar;
 			productReference = 8CECBBDF2742AAF800A2802D /* pullBar.app */;
@@ -167,6 +170,7 @@
 			packageReferences = (
 				8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */,
 				8CECBBF92742ABE600A2802D /* XCRemoteSwiftPackageReference "Alamofire" */,
+				76C6A33027C7D98B00E1257B /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
 			productRefGroup = 8CECBBE02742AAF800A2802D /* Products */;
 			projectDirPath = "";
@@ -225,6 +229,7 @@
 		8CECBBEC2742AAFB00A2802D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -286,6 +291,7 @@
 		8CECBBED2742AAFB00A2802D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -419,6 +425,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		76C6A33027C7D98B00E1257B /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.0;
+			};
+		};
 		8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/Defaults";
@@ -438,6 +452,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		76C6A33127C7D98B00E1257B /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 76C6A33027C7D98B00E1257B /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
 		8CECBBF72742ABDA00A2802D /* Defaults */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */;

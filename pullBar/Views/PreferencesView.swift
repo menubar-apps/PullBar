@@ -7,11 +7,12 @@
 
 import SwiftUI
 import Defaults
+import KeychainAccess
 
 struct PreferencesView: View {
     
     @Default(.githubUsername) var githubUsername
-    @Default(.githubToken) var githubToken
+//    @Default(.githubToken) var githubToken
     
     @Default(.showAssigned) var showAssigned
     @Default(.showCreated) var showCreated
@@ -22,21 +23,28 @@ struct PreferencesView: View {
     
     @Default(.refreshRate) var refreshRate
     
+    @State var val = ""
+    @KeychainStorage("githubToken") var githubTokenSec
+
+    
     var body: some View {
         Form {
             Section {
                 VStack(alignment: .leading) {
                     HStack(alignment: .center) {
-                        Text("GitHub username:").frame(width: 120, alignment: .trailing)
+                        Text("GitHub Username:").frame(width: 120, alignment: .trailing)
                         TextField("", text: $githubUsername)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 200)
                     }
                     
                     HStack(alignment: .center) {
-                        Text("GitHub token:").frame(width: 120, alignment: .trailing)
+                        Text("GitHub Token:").frame(width: 120, alignment: .trailing)
                         VStack(alignment: .leading) {
-                            SecureField("", text: $githubToken)
+//                            SecureField("", text: $githubToken)
+//                                .textFieldStyle(RoundedBorderTextFieldStyle())
+//                                .frame(width: 340)
+                            SecureField("", text: $githubTokenSec)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .frame(width: 340)
                             Text("[Generate](https://github.com/settings/tokens/new?scopes=repo) a personal access token, make sure to select **repo** scope")
@@ -45,7 +53,7 @@ struct PreferencesView: View {
                     }
                     Divider()
                     HStack(alignment: .center) {
-                        Text("Show pull requests:").frame(width: 120, alignment: .trailing)
+                        Text("Show Pull Requests:").frame(width: 120, alignment: .trailing)
                         VStack(alignment: .leading){
                             Toggle("assigned", isOn: $showAssigned)
                             Toggle("created", isOn: $showCreated)
@@ -54,7 +62,7 @@ struct PreferencesView: View {
                     }
                     
                     HStack(alignment: .center) {
-                        Text("Show avatar:").frame(width: 120, alignment: .trailing)
+                        Text("Show Avatar:").frame(width: 120, alignment: .trailing)
                         Toggle("", isOn: $showAvatar)
                     }
 
@@ -80,6 +88,18 @@ struct PreferencesView: View {
         }
         .padding()
         .frame(width: 500)
+//        .onAppear{
+//            print("on appear")
+//            val = githubTokenSec
+//            print("a-val=\(val)")
+//            print("a-githubTokenSec=\(githubTokenSec)")
+//        }
+//        .onDisappear{print("disappear")}
+//        .onExitCommand {
+//            githubTokenSec = val
+//            print("d-val=\(val)")
+//            print("d-githubTokenSec=\(githubTokenSec)")
+//        }
     }
 }
 
@@ -87,4 +107,32 @@ struct PreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         PreferencesView()
     }
+}
+
+
+@propertyWrapper
+struct KeychainStorage: DynamicProperty {
+  let key: String
+  @State private var value: String
+  init(wrappedValue: String = "", _ key: String) {
+    self.key = key
+    let initialValue = (try? Keychain().get(key)) ?? wrappedValue
+    self._value = State<String>(initialValue: initialValue)
+  }
+  var wrappedValue: String {
+      get { (try? Keychain().get(key)) ?? "" }
+
+    nonmutating set {
+      value = newValue
+      do {
+        try Keychain().set(value, key: key)
+          print("setting new value \(value)")
+      } catch let error {
+        fatalError("\(error)")
+      }
+    }
+  }
+  var projectedValue: Binding<String> {
+    Binding(get: { wrappedValue }, set: { wrappedValue = $0 })
+  }
 }
