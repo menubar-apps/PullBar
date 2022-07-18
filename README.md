@@ -15,14 +15,14 @@ Native MacOS menubar application to show GitHub Pull Requests in your menu bar! 
 # Features
 
  - shows assigned, created and/or review requested pull requests;
- - for each pull request shows title, number, project, author, number of approvals, number of added/deleted line and how long ago this PR was created;
+ - for each pull request shows title, number, project, author, number of approvals, number of added/deleted lines and how long ago this PR was created;
  - show check suites information.
 
 # Installation
 
 [Download](https://github.com/menubar-apps/PullBar/releases/latest/download/pullBar.1.1.dmg) and install the latest release.
 
-Then [generate](https://github.com/settings/tokens/new?scopes=repo) a github access token (you'll need to have a repo score selected) and paste it in the application preferences with your github username:
+Then [generate](https://github.com/settings/tokens/new?scopes=repo) a github access token (you'll need to have a repo scope selected) and paste it in the application preferences with your github username:
 
 <p align="center">
   <img width="612" alt="Screen Shot 2022-02-05 at 2 04 51 PM" src="https://user-images.githubusercontent.com/9363150/152655330-109e1e64-433c-49e3-a64a-477676b57dcc.png">
