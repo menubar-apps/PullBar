@@ -6,21 +6,17 @@
   <img alt="GitHub top language" src="https://img.shields.io/github/languages/top/menubar-apps/pullbar">
 </p>
   
-GitHub Pull requests in your menu bar! Keep track of created, assigned and review requested Pull Requests:
+Native MacOS menubar application to show GitHub Pull Requests in your menu bar! Keep track of created, assigned and review requested Pull Requests:
 
 <p align="center">
-  <img width="453" alt="Screen Shot 2022-01-28 at 7 52 35 PM" src="https://user-images.githubusercontent.com/9363150/151640176-ddd1e4e7-d05c-4ac4-857c-54b2271dd23a.png">
-  </p>
+  <img width="708" alt="Screen Shot 2022-07-17 at 9 06 36 PM" src="https://user-images.githubusercontent.com/9363150/179432557-f3db115e-fe9d-4f91-ac7c-0d85ce3f9e43.png">
+““ß</p>
 
 # Features
 
- - shows assigned, created or review requested pull requests;
- - for each pull request shows title, number, project, author, number of approvals, number of additions/deletions and how long ago this PR was created;
- - shows information about check suites on the PR:
-
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/9363150/152239478-14737f64-85fe-44f2-a769-38b181a299e5.png" alt="Screen Shot 2022-02-02 at 4 21 41 PM" style="max-width: 100%;">
-</p>
+ - shows assigned, created and/or review requested pull requests;
+ - for each pull request shows title, number, project, author, number of approvals, number of added/deleted line and how long ago this PR was created;
+ - show check suites information.
 
 # Installation
 
