@@ -43,6 +43,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         icon?.isTemplate = true
         icon?.size = size
         statusButton.image = icon
+        statusButton.imagePosition = NSControl.ImagePosition.imageLeft
         
         statusBarItem.menu = menu
         
@@ -81,6 +82,7 @@ extension AppDelegate {
     func refreshMenu() {
         NSLog("Refreshing menu")
         self.menu.removeAllItems()
+        self.statusBarItem.button?.title = ""
         
         if (githubUsername == "" || githubToken == "") {
             addMenuFooterItems()
@@ -121,32 +123,46 @@ extension AppDelegate {
         
         group.notify(queue: .main) {
             
+            let isOneSelected = (self.showAssigned.intValue + self.showCreated.intValue + self.showRequested.intValue) == 1
+
             
             if let assignedPulls = assignedPulls, let createdPulls = createdPulls, let reviewRequestedPulls = reviewRequestedPulls {
-
+                
                 if self.showAssigned && !assignedPulls.isEmpty {
-                    self.menu.addItem(NSMenuItem(title: "Assigned", action: nil, keyEquivalent: ""))
+                    self.menu.addItem(NSMenuItem(title: "Assigned (\(assignedPulls.count))", action: nil, keyEquivalent: ""))
                     for pull in assignedPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
                     self.menu.addItem(.separator())
+                    if isOneSelected {
+                        self.statusBarItem.button?.title = String(assignedPulls.count)
+                    }
                 }
                 
                 if self.showCreated && !createdPulls.isEmpty {
-                    self.menu.addItem(NSMenuItem(title: "Created", action: nil, keyEquivalent: ""))
+                    self.menu.addItem(NSMenuItem(title: "Created (\(createdPulls.count))", action: nil, keyEquivalent: ""))
                     for pull in createdPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
                     self.menu.addItem(.separator())
+                    if isOneSelected {
+                        self.statusBarItem.button?.title = String(createdPulls.count)
+                    }
+
                 }
 
                 if self.showRequested && !reviewRequestedPulls.isEmpty {
-                    self.menu.addItem(NSMenuItem(title: "Review Requested", action: nil, keyEquivalent: ""))
+                    self.menu.addItem(NSMenuItem(title: "Review Requested (\(reviewRequestedPulls.count))", action: nil, keyEquivalent: ""))
                     for pull in reviewRequestedPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
                     self.menu.addItem(.separator())
+                    if isOneSelected {
+                        self.statusBarItem.button?.title = String(reviewRequestedPulls.count)
+                    }
+
                 }
+                
                 
                 self.addMenuFooterItems()
             }
