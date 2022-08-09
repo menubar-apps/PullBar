@@ -6,6 +6,10 @@
   <img alt="GitHub top language" src="https://img.shields.io/github/languages/top/menubar-apps/pullbar">
 </p>
   
+<p align="center">
+<a href="https://apps.apple.com/ca/app/pullbar/id1601913905?mt=12&amp;itsct=apps_box_badge&amp;itscg=30200" style="display: inline-block; overflow: hidden; border-radius: 13px; width: 250px; height: 83px;" data-ol-has-click-handler="&h=42ae61fed6985dfa41e1aec1722a55b5"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-mac-app-store/white/en-us?size=250x83&amp;releaseDate=1659916800" alt="Download on the Mac App Store" style="border-radius: 13px; width: 250px; height: 83px;"></a>
+</p>
+
 Native MacOS menubar application to show GitHub Pull Requests in your menu bar! Keep track of created, assigned and review requested Pull Requests:
 
 <p align="center">
