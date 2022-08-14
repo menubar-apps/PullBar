@@ -10,6 +10,13 @@ import SwiftUI
 
 extension NSImage {
 
+    convenience init?(named: String, color: NSColor) {
+
+        let img = NSImage.init(named: named)!
+        let newImg = img.tint(color: color)
+        self.init(data: newImg.tiffRepresentation!)
+    }
+    
     static func imageFromUrl(fromURL url: URL) -> NSImage? {
         guard let data = try? Foundation.Data(contentsOf: url) else { return nil }
         guard let image = NSImage(data: data) else { return nil }

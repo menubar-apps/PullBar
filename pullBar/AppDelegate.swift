@@ -224,38 +224,39 @@ extension AppDelegate {
         }
         
         
-        let commits = pull.node.commits
-        if commits.nodes[0].commit.checkSuites.nodes.count > 0 {
-            issueItem.submenu = NSMenu()
-            issueItemTitle
-                .appendSeparator()
-                .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
-        }
-        for checkSuite in commits.nodes[0].commit.checkSuites.nodes {
-            
-            if checkSuite.checkRuns.nodes.count > 0 {
-                issueItem.submenu?.addItem(withTitle: checkSuite.app?.name ?? "empty", action: nil, keyEquivalent: "")
+        if let commits = pull.node.commits {
+            if commits.nodes[0].commit.checkSuites.nodes.count > 0 {
+                issueItem.submenu = NSMenu()
+                issueItemTitle
+                    .appendSeparator()
+                    .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
             }
-            for check in checkSuite.checkRuns.nodes {
+            for checkSuite in commits.nodes[0].commit.checkSuites.nodes {
                 
-                let buildItem = NSMenuItem(title: check.name, action: #selector(self.openLink), keyEquivalent: "")
-                buildItem.representedObject = check.detailsUrl
-                buildItem.toolTip = check.conclusion
-                if check.conclusion  == "SUCCESS" {
-                    buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
-                    issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
-                } else if check.conclusion  == "FAILURE" {
-                    buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
-                    issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
-                } else if check.conclusion  == "ACTION_REQUIRED" {
-                    buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
-                    issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
-                } else {
-                    buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
-                    issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
+                if checkSuite.checkRuns.nodes.count > 0 {
+                    issueItem.submenu?.addItem(withTitle: checkSuite.app?.name ?? "empty", action: nil, keyEquivalent: "")
                 }
-                
-                issueItem.submenu?.addItem(buildItem)
+                for check in checkSuite.checkRuns.nodes {
+                    
+                    let buildItem = NSMenuItem(title: check.name, action: #selector(self.openLink), keyEquivalent: "")
+                    buildItem.representedObject = check.detailsUrl
+                    buildItem.toolTip = check.conclusion
+                    if check.conclusion  == "SUCCESS" {
+                        buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
+                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
+                    } else if check.conclusion  == "FAILURE" {
+                        buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
+                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
+                    } else if check.conclusion  == "ACTION_REQUIRED" {
+                        buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
+                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
+                    } else {
+                        buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
+                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
+                    }
+                    
+                    issueItem.submenu?.addItem(buildItem)
+                }
             }
         }
         
