@@ -19,6 +19,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @Default(.showAvatar) var showAvatar
     @Default(.showChecks) var showChecks
+    @Default(.showLabels) var showLabels
     
     @Default(.refreshRate) var refreshRate
     
@@ -183,6 +184,17 @@ extension AppDelegate {
             .appendSeparator()
             .appendIcon(iconName: "person")
             .appendString(string: pull.node.author.login)
+                
+        if !pull.node.labels.nodes.isEmpty && self.showLabels {
+            issueItemTitle
+                .appendNewLine()
+                .appendIcon(iconName: "tag", color: NSColor(.secondary))
+            for label in pull.node.labels.nodes {
+                issueItemTitle
+                    .appendString(string: label.name, color: hexColor(hex: label.color), fontSize: NSFont.smallSystemFontSize)
+                    .appendSeparator()
+           }
+        }
         
         issueItemTitle.appendNewLine()
         
@@ -212,43 +224,40 @@ extension AppDelegate {
         }
         
         
-        
-        if let commits = pull.node.commits {
-            if commits.nodes[0].commit.checkSuites.nodes.count > 0 {
-                issueItem.submenu = NSMenu()
-                issueItemTitle
-                    .appendSeparator()
-                    .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
+        let commits = pull.node.commits
+        if commits.nodes[0].commit.checkSuites.nodes.count > 0 {
+            issueItem.submenu = NSMenu()
+            issueItemTitle
+                .appendSeparator()
+                .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
+        }
+        for checkSuite in commits.nodes[0].commit.checkSuites.nodes {
+            
+            if checkSuite.checkRuns.nodes.count > 0 {
+                issueItem.submenu?.addItem(withTitle: checkSuite.app?.name ?? "empty", action: nil, keyEquivalent: "")
             }
-            for checkSuite in commits.nodes[0].commit.checkSuites.nodes {
+            for check in checkSuite.checkRuns.nodes {
                 
-                if checkSuite.checkRuns.nodes.count > 0 {
-                    issueItem.submenu?.addItem(withTitle: checkSuite.app?.name ?? "empty", action: nil, keyEquivalent: "")
+                let buildItem = NSMenuItem(title: check.name, action: #selector(self.openLink), keyEquivalent: "")
+                buildItem.representedObject = check.detailsUrl
+                buildItem.toolTip = check.conclusion
+                if check.conclusion  == "SUCCESS" {
+                    buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
+                    issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
+                } else if check.conclusion  == "FAILURE" {
+                    buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
+                    issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
+                } else if check.conclusion  == "ACTION_REQUIRED" {
+                    buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
+                    issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
+                } else {
+                    buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
+                    issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
                 }
-                for check in checkSuite.checkRuns.nodes {
-                    
-                    let buildItem = NSMenuItem(title: check.name, action: #selector(self.openLink), keyEquivalent: "")
-                    buildItem.representedObject = check.detailsUrl
-                    buildItem.toolTip = check.conclusion
-                    if check.conclusion  == "SUCCESS" {
-                        buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
-                    } else if check.conclusion  == "FAILURE" {
-                        buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
-                    } else if check.conclusion  == "ACTION_REQUIRED" {
-                        buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
-                    } else {
-                        buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
-                    }
-                    
-                    issueItem.submenu?.addItem(buildItem)
-                }
+                
+                issueItem.submenu?.addItem(buildItem)
             }
         }
-        
         
         issueItem.attributedTitle = issueItemTitle
         if pull.node.title.count > 50 {

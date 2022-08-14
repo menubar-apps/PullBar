@@ -60,7 +60,8 @@ struct Pull: Codable {
     var reviews: Review
     var author: User
     var repository: Repository
-    var commits: CommitsNodes?
+    var commits: Nodes<Commit>
+    var labels: Nodes<Label>
     
     enum CodingKeys: String, CodingKey {
         case url
@@ -74,15 +75,19 @@ struct Pull: Codable {
         case author
         case repository
         case commits
+        case labels
     }
 }
 
-//edges {
-//    node {
-//      author {
-//        login
-//      }
-//    }
+
+struct Nodes<T: Codable & Hashable>: Codable, Hashable {
+    var nodes: [T]
+    
+    enum CodingKeys: String, CodingKey {
+        case nodes
+    }
+}
+
 struct Review: Codable {
     var totalCount: Int
     var edges: [UserEdge]
@@ -129,13 +134,13 @@ struct Repository: Codable {
 
 struct CommitsNodes: Codable {
     var nodes: [Commit]
-    
+
     enum CodingKeys: String, CodingKey {
         case nodes
     }
 }
 
-struct Commit: Codable {
+struct Commit: Codable, Hashable {
     var commit: CheckSuites
     
     enum CodingKeys: String, CodingKey {
@@ -143,7 +148,7 @@ struct Commit: Codable {
     }
 }
 
-struct CheckSuites: Codable {
+struct CheckSuites: Codable, Hashable {
     var checkSuites: CheckSuitsNodes
     
     enum CodingKeys: String, CodingKey {
@@ -152,22 +157,22 @@ struct CheckSuites: Codable {
 }
 
 
-struct CheckSuitsNodes: Codable {
+struct CheckSuitsNodes: Codable, Hashable {
     var nodes: [CheckSuit]
-    
+
     enum CodingKeys: String, CodingKey {
         case nodes
     }
 }
 
-struct App: Codable {
+struct App: Codable, Hashable {
     var name: String?
     enum CodingKeys: String, CodingKey {
         case name
     }
 }
 
-struct CheckSuit: Codable {
+struct CheckSuit: Codable, Hashable {
     var app: App?
     var checkRuns: CheckRun
     
@@ -177,7 +182,7 @@ struct CheckSuit: Codable {
     }
 }
 
-struct CheckRun: Codable {
+struct CheckRun: Codable, Hashable {
     var totalCount: Int
     var nodes: [Check]
     
@@ -187,7 +192,7 @@ struct CheckRun: Codable {
     }
 }
 
-struct Check: Codable {
+struct Check: Codable, Hashable {
     var name: String
     var conclusion: String?
     var detailsUrl: URL
@@ -217,5 +222,15 @@ struct Asset: Codable {
     enum CodingKeys: String, CodingKey {
         case name
         case browserDownloadUrl = "browser_download_url"
+    }
+}
+
+struct Label: Codable, Hashable {
+    var name: String
+    var color: String
+    
+    enum CodingKeys: String, CodingKey {
+        case name
+        case color
     }
 }

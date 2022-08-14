@@ -156,6 +156,12 @@ public class GitHubClient {
                             repository {
                                 name
                             }
+                             labels(first: 5) {
+                                nodes {
+                                  name
+                                  color
+                                }
+                              }
                             reviews(states: APPROVED, first: 10) {
                                 totalCount
                                 edges {
