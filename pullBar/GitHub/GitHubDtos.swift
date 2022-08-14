@@ -60,7 +60,7 @@ struct Pull: Codable {
     var reviews: Review
     var author: User
     var repository: Repository
-    var commits: Nodes<Commit>
+    var commits: CommitsNodes?
     var labels: Nodes<Label>
     
     enum CodingKeys: String, CodingKey {

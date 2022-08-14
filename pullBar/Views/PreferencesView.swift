@@ -23,6 +23,10 @@ struct PreferencesView: View {
     
     @Default(.refreshRate) var refreshRate
     
+    @State private var showGhAlert = false
+    
+    @StateObject private var tokenStatus = TokenStatus()
+    
     var body: some View {
         Form {
             Section {
@@ -31,15 +35,27 @@ struct PreferencesView: View {
                         Text("GitHub username:").frame(width: 120, alignment: .trailing)
                         TextField("", text: $githubUsername)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .disableAutocorrection(true)
+                            .textContentType(.password)
                             .frame(width: 200)
                     }
                     
                     HStack(alignment: .center) {
                         Text("GitHub token:").frame(width: 120, alignment: .trailing)
                         VStack(alignment: .leading) {
-                            SecureField("", text: $githubToken)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .frame(width: 340)
+                            HStack() {
+                                SecureField("", text: $githubToken)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 360)
+                                Image(nsImage: NSImage(named: tokenStatus.icon, color: tokenStatus.color)!)
+                                    .help(tokenStatus.tooltip)
+                                Button {
+                                    tokenStatus.checkStatus()
+                                } label: {
+                                    Image(systemName: "repeat")
+                                }
+                                .help("Retry")
+                            }
                             Text("[Generate](https://github.com/settings/tokens/new?scopes=repo) a personal access token, make sure to select **repo** scope")
                                 .font(.footnote)
                         }
@@ -85,7 +101,10 @@ struct PreferencesView: View {
             }
         }
         .padding()
-        .frame(width: 500)
+//        .frame(width: 500)
+        .onAppear() {
+            tokenStatus.checkStatus();
+        }
     }
 }
 

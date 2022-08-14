@@ -208,6 +208,29 @@ public class GitHubClient {
                     }
                 }
         }
+    
+    func getUser(completion: @escaping (User?) -> Void) {
+        let headers: HTTPHeaders = [
+            .authorization(bearerToken: githubToken),
+            .contentType("application/json"),
+            .accept("application/json")
+        ]
+        
+        AF.request("https://api.github.com/user",
+                   method: .get,
+                   headers: headers)
+        .validate(statusCode: 200..<300)
+        .cacheResponse(using: ResponseCacher(behavior: .doNotCache))
+        .responseDecodable(of: User.self) { response in
+            switch response.result {
+            case .success(let repo):
+                completion(repo)
+            case .failure(let error):
+                completion(nil)
+                print(error)
+            }
+        }
+    }
 }
 
 class GithubDecoder: JSONDecoder {
