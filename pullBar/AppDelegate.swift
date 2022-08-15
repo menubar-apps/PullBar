@@ -274,6 +274,7 @@ extension AppDelegate {
         self.menu.addItem(.separator())
         self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: "")
         self.menu.addItem(withTitle: "About PullBar", action: #selector(self.openAboutWindow), keyEquivalent: "")
+        self.menu.addItem(withTitle: "Check for Updates...", action: #selector(self.checkForUpdates), keyEquivalent: "")
         self.menu.addItem(withTitle: "Quit", action: #selector(self.quit), keyEquivalent: "")
     }
     
@@ -353,6 +354,27 @@ extension AppDelegate {
         }
     }
     
+    @objc
+    func quit(_: NSStatusBarButton) {
+        NSLog("User click Quit")
+        NSApplication.shared.terminate(self)
+    }
+    
+    @objc
+    func checkForUpdates(_: NSStatusBarButton?) {
+        let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String
+        ghClient.getLatestRelease { latestRelease in
+            if let latestRelease = latestRelease {
+                let versionComparison = currentVersion.compare(latestRelease.version.replacingOccurrences(of: "v", with: ""), options: .numeric)
+                if versionComparison == .orderedAscending {
+                    self.downloadNewVersionDialog(link: latestRelease.trackViewUrl)
+                } else {
+                    self.dialogWithText(text: "You have the latest version installed!")
+                }
+            }
+        }
+    }
+    
     func dialogWithText(text: String) -> Void {
         let alert = NSAlert()
         alert.messageText = text
@@ -361,7 +383,7 @@ extension AppDelegate {
         alert.runModal()
     }
 
-    func downloadNewVersionDialog(link: String) -> Void {
+    func downloadNewVersionDialog(link: URL) -> Void {
         let alert = NSAlert()
         alert.messageText = "New version is available!"
         alert.alertStyle = .informational
@@ -369,14 +391,7 @@ extension AppDelegate {
         alert.addButton(withTitle: "Cancel")
         let pressedButton = alert.runModal()
         if (pressedButton == .alertFirstButtonReturn) {
-            NSWorkspace.shared.open(URL(string: link)!)
+            NSWorkspace.shared.open(link)
         }
     }
-    
-    @objc
-    func quit(_: NSStatusBarButton) {
-        NSLog("User click Quit")
-        NSApplication.shared.terminate(self)
-    }
-
 }
