@@ -11,7 +11,6 @@
 		769F4E7B277B97B300594911 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7A277B97B300594911 /* Notifications.swift */; };
 		769F4E7D277CAFAD00594911 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7C277CAFAD00594911 /* StringExtensions.swift */; };
 		76F7DAD028A88CAB0086A3B0 /* TokenStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F7DACF28A88CAB0086A3B0 /* TokenStatus.swift */; };
-		76F7DAD228A9CA1F0086A3B0 /* AppStoreDtos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F7DAD128A9CA1F0086A3B0 /* AppStoreDtos.swift */; };
 		8C55444B274AD7B20079CA42 /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C55444A274AD7B20079CA42 /* DateExtensions.swift */; };
 		8C55444D274AD9E00079CA42 /* NSImageExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C55444C274AD9E00079CA42 /* NSImageExtensions.swift */; };
 		8CECBBE32742AAF900A2802D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CECBBE22742AAF900A2802D /* AppDelegate.swift */; };
@@ -31,7 +30,6 @@
 		769F4E7A277B97B300594911 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
 		769F4E7C277CAFAD00594911 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
 		76F7DACF28A88CAB0086A3B0 /* TokenStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStatus.swift; sourceTree = "<group>"; };
-		76F7DAD128A9CA1F0086A3B0 /* AppStoreDtos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreDtos.swift; sourceTree = "<group>"; };
 		8C55444A274AD7B20079CA42 /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
 		8C55444C274AD9E00079CA42 /* NSImageExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSImageExtensions.swift; sourceTree = "<group>"; };
 		8CECBBDF2742AAF800A2802D /* pullBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pullBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,7 +94,6 @@
 				8CECBBF22742AB3F00A2802D /* GitHubClient.swift */,
 				8CECBBF32742AB3F00A2802D /* GitHubDtos.swift */,
 				76F7DACF28A88CAB0086A3B0 /* TokenStatus.swift */,
-				76F7DAD128A9CA1F0086A3B0 /* AppStoreDtos.swift */,
 			);
 			path = GitHub;
 			sourceTree = "<group>";
@@ -209,7 +206,6 @@
 				8CECBBF52742AB3F00A2802D /* GitHubDtos.swift in Sources */,
 				769F4E1B2765A2B900594911 /* AboutView.swift in Sources */,
 				8CECBC0927436C2200A2802D /* NSMutableAttributedStringExtensions.swift in Sources */,
-				76F7DAD228A9CA1F0086A3B0 /* AppStoreDtos.swift in Sources */,
 				8CECBBF42742AB3F00A2802D /* GitHubClient.swift in Sources */,
 				8C55444D274AD9E00079CA42 /* NSImageExtensions.swift in Sources */,
 				8CECBBFE2742AC0800A2802D /* DefaultsExtensions.swift in Sources */,
