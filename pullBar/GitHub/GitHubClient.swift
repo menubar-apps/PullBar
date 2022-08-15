@@ -183,21 +183,21 @@ public class GitHubClient {
         """
     }
     
-    func getLatestRelease(completion:@escaping (((LatestRelease?) -> Void))) -> Void {
+    func getLatestRelease(completion:@escaping (((Release?) -> Void))) -> Void {
             let headers: HTTPHeaders = [
-                .authorization(username: githubUsername, password: githubToken),
                 .contentType("application/json"),
                 .accept("application/json")
             ]
-            AF.request("https://api.github.com/repos/menubar-apps/PullBar/releases/latest",
+            let bundleId = Bundle.main.infoDictionary!["CFBundleIdentifier"] as! String
+            AF.request("https://itunes.apple.com/lookup?bundleId=\(bundleId)",
                        method: .get,
                        encoding: JSONEncoding.default,
                        headers: headers)
                 .validate(statusCode: 200..<300)
-                .responseDecodable(of: LatestRelease.self) { response in
+                .responseDecodable(of: Releases.self) { response in
                     switch response.result {
                     case .success(let latestRelease):
-                        completion(latestRelease)
+                        completion(latestRelease.results.first)
                     case .failure(let error):
                         completion(nil)
                         if let data = response.data {
