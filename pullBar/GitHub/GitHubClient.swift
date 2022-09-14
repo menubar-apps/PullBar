@@ -8,11 +8,12 @@
 import Foundation
 import Defaults
 import Alamofire
+import KeychainAccess
 
 public class GitHubClient {
     
     @Default(.githubUsername) var githubUsername
-    @Default(.githubToken) var githubToken
+    @FromKeychain(.githubToken) var githubToken
     
     @Default(.showChecks) var showChecks
     

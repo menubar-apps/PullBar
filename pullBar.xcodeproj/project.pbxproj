@@ -11,7 +11,9 @@
 		769F4E1B2765A2B900594911 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E1A2765A2B900594911 /* AboutView.swift */; };
 		769F4E7B277B97B300594911 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7A277B97B300594911 /* Notifications.swift */; };
 		769F4E7D277CAFAD00594911 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7C277CAFAD00594911 /* StringExtensions.swift */; };
-		76F7DAD028A88CAB0086A3B0 /* TokenStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F7DACF28A88CAB0086A3B0 /* TokenStatus.swift */; };
+		76D5F9E428D28958009EBD80 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 76D5F9E328D28958009EBD80 /* KeychainAccess */; };
+		76D5F9E628D28A29009EBD80 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76D5F9E528D28A29009EBD80 /* Keychain.swift */; };
+		76F7DAD028A88CAB0086A3B0 /* GithubTokenValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F7DACF28A88CAB0086A3B0 /* GithubTokenValidator.swift */; };
 		8C55444B274AD7B20079CA42 /* DateExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C55444A274AD7B20079CA42 /* DateExtensions.swift */; };
 		8C55444D274AD9E00079CA42 /* NSImageExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C55444C274AD9E00079CA42 /* NSImageExtensions.swift */; };
 		8CECBBE32742AAF900A2802D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CECBBE22742AAF900A2802D /* AppDelegate.swift */; };
@@ -31,7 +33,8 @@
 		769F4E1A2765A2B900594911 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		769F4E7A277B97B300594911 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
 		769F4E7C277CAFAD00594911 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
-		76F7DACF28A88CAB0086A3B0 /* TokenStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStatus.swift; sourceTree = "<group>"; };
+		76D5F9E528D28A29009EBD80 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		76F7DACF28A88CAB0086A3B0 /* GithubTokenValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GithubTokenValidator.swift; sourceTree = "<group>"; };
 		8C55444A274AD7B20079CA42 /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
 		8C55444C274AD9E00079CA42 /* NSImageExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSImageExtensions.swift; sourceTree = "<group>"; };
 		8CECBBDF2742AAF800A2802D /* pullBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pullBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -53,6 +56,7 @@
 			files = (
 				8CECBBF82742ABDA00A2802D /* Defaults in Frameworks */,
 				8CECBBFB2742ABE600A2802D /* Alamofire in Frameworks */,
+				76D5F9E428D28958009EBD80 /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -86,6 +90,7 @@
 				8CECBBE82742AAFB00A2802D /* Main.storyboard */,
 				8CECBBEB2742AAFB00A2802D /* pullBar.entitlements */,
 				769F4E7A277B97B300594911 /* Notifications.swift */,
+				76D5F9E528D28A29009EBD80 /* Keychain.swift */,
 			);
 			path = pullBar;
 			sourceTree = "<group>";
@@ -95,7 +100,7 @@
 			children = (
 				8CECBBF22742AB3F00A2802D /* GitHubClient.swift */,
 				8CECBBF32742AB3F00A2802D /* GitHubDtos.swift */,
-				76F7DACF28A88CAB0086A3B0 /* TokenStatus.swift */,
+				76F7DACF28A88CAB0086A3B0 /* GithubTokenValidator.swift */,
 			);
 			path = GitHub;
 			sourceTree = "<group>";
@@ -141,6 +146,7 @@
 			packageProductDependencies = (
 				8CECBBF72742ABDA00A2802D /* Defaults */,
 				8CECBBFA2742ABE600A2802D /* Alamofire */,
+				76D5F9E328D28958009EBD80 /* KeychainAccess */,
 			);
 			productName = pullBar;
 			productReference = 8CECBBDF2742AAF800A2802D /* pullBar.app */;
@@ -173,6 +179,7 @@
 			packageReferences = (
 				8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */,
 				8CECBBF92742ABE600A2802D /* XCRemoteSwiftPackageReference "Alamofire" */,
+				76D5F9E228D28958009EBD80 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
 			productRefGroup = 8CECBBE02742AAF800A2802D /* Products */;
 			projectDirPath = "";
@@ -205,7 +212,7 @@
 				8CECBC022742B3A000A2802D /* PreferencesView.swift in Sources */,
 				769F4E7B277B97B300594911 /* Notifications.swift in Sources */,
 				8CECBBE32742AAF900A2802D /* AppDelegate.swift in Sources */,
-				76F7DAD028A88CAB0086A3B0 /* TokenStatus.swift in Sources */,
+				76F7DAD028A88CAB0086A3B0 /* GithubTokenValidator.swift in Sources */,
 				8CECBBF52742AB3F00A2802D /* GitHubDtos.swift in Sources */,
 				768A4C5528AF253C004E557E /* BottomItemView.swift in Sources */,
 				769F4E1B2765A2B900594911 /* AboutView.swift in Sources */,
@@ -213,6 +220,7 @@
 				8CECBBF42742AB3F00A2802D /* GitHubClient.swift in Sources */,
 				8C55444D274AD9E00079CA42 /* NSImageExtensions.swift in Sources */,
 				8CECBBFE2742AC0800A2802D /* DefaultsExtensions.swift in Sources */,
+				76D5F9E628D28A29009EBD80 /* Keychain.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -367,7 +375,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pavelmakhov.pullBar;
+				PRODUCT_BUNDLE_IDENTIFIER = debug.com.pavelmakhov.pullBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -427,6 +435,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		76D5F9E228D28958009EBD80 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.0;
+			};
+		};
 		8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/Defaults";
@@ -446,6 +462,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		76D5F9E328D28958009EBD80 /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 76D5F9E228D28958009EBD80 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
 		8CECBBF72742ABDA00A2802D /* Defaults */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */;

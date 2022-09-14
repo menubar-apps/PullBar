@@ -7,11 +7,12 @@
 
 import SwiftUI
 import Defaults
+import KeychainAccess
 
 struct PreferencesView: View {
     
     @Default(.githubUsername) var githubUsername
-    @Default(.githubToken) var githubToken
+    @FromKeychain(.githubToken) var githubToken
     
     @Default(.showAssigned) var showAssigned
     @Default(.showCreated) var showCreated
@@ -25,8 +26,8 @@ struct PreferencesView: View {
     
     @State private var showGhAlert = false
     
-    @StateObject private var tokenStatus = TokenStatus()
-    
+    @StateObject private var githubTokenValidator = GithubTokenValidator()
+
     var body: some View {
         Form {
             Section {
@@ -46,11 +47,17 @@ struct PreferencesView: View {
                             HStack() {
                                 SecureField("", text: $githubToken)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .frame(width: 360)
-                                Image(nsImage: NSImage(named: tokenStatus.icon, color: tokenStatus.color)!)
-                                    .help(tokenStatus.tooltip)
+                                    .overlay(
+                                        Image(systemName: githubTokenValidator.iconName).foregroundColor(githubTokenValidator.iconColor)
+                                            .frame(maxWidth: .infinity, alignment: .trailing)
+                                            .padding(.trailing, 8)
+                                        )
+                                    .frame(width: 380)
+                                    .onChange(of: githubToken) { _ in
+                                        githubTokenValidator.validate()
+                                    }
                                 Button {
-                                    tokenStatus.checkStatus()
+                                    githubTokenValidator.validate()
                                 } label: {
                                     Image(systemName: "repeat")
                                 }
@@ -101,9 +108,8 @@ struct PreferencesView: View {
             }
         }
         .padding()
-//        .frame(width: 500)
         .onAppear() {
-            tokenStatus.checkStatus();
+            githubTokenValidator.validate()
         }
     }
 }

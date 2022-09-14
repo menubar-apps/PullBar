@@ -9,6 +9,7 @@ import Cocoa
 import Defaults
 import SwiftUI
 import Foundation
+import KeychainAccess
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -24,7 +25,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @Default(.refreshRate) var refreshRate
     
     @Default(.githubUsername) var githubUsername
-    @Default(.githubToken) var githubToken
+    @FromKeychain(.githubToken) var githubToken
 
     let ghClient = GitHubClient()
     var statusBarItem: NSStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -354,7 +355,7 @@ extension AppDelegate {
     }
     
     @objc
-    func quit(_: NSStatusBarButton) {
+    func quit() {
         NSLog("User click Quit")
         NSApplication.shared.terminate(self)
     }

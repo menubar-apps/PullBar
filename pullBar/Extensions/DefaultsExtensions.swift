@@ -10,7 +10,6 @@ import Defaults
 
 extension Defaults.Keys {
     static let githubUsername = Key<String>("githubUsername", default: "")
-    static let githubToken = Key<String>("githubToken", default: "")
     
     static let showAssigned = Key<Bool>("showAssigned", default: false)
     static let showCreated = Key<Bool>("showCreated", default: false)
@@ -23,3 +22,6 @@ extension Defaults.Keys {
     static let refreshRate = Key<Int>("refreshRate", default: 5)
 }
 
+extension KeychainKeys {
+    static let githubToken: KeychainAccessKey = KeychainAccessKey(key: "githubToken")
+}
