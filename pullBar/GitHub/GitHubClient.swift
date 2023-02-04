@@ -150,6 +150,7 @@ public class GitHubClient {
                             url
                             deletions
                             additions
+                            isDraft
                             author {
                                 login
                                 avatarUrl

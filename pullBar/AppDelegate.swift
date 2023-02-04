@@ -176,6 +176,9 @@ extension AppDelegate {
         
         let issueItemTitle = NSMutableAttributedString(string: pull.node.title.trunc(length: 50))
             .appendString(string: " #" +  String(pull.node.number))
+            .appendSeparator()
+            .appendIcon(iconName: pull.node.isDraft ? "git-draft-pull-request" : "git-pull-request", color: pull.node.isDraft ? NSColor.secondaryLabelColor : NSColor(named: "green")!)
+            .appendString(string: pull.node.isDraft ? "Draft" : "Open", color: pull.node.isDraft ? NSColor.secondaryLabelColor : NSColor(named: "green")!)
         
         issueItemTitle.appendNewLine()
 
