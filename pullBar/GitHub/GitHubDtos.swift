@@ -62,6 +62,7 @@ struct Pull: Codable {
     var repository: Repository
     var commits: CommitsNodes?
     var labels: Nodes<Label>
+    var isDraft: Bool
     
     enum CodingKeys: String, CodingKey {
         case url
@@ -76,6 +77,7 @@ struct Pull: Codable {
         case repository
         case commits
         case labels
+        case isDraft
     }
 }
 
