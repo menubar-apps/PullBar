@@ -26,11 +26,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @Default(.githubUsername) var githubUsername
     @FromKeychain(.githubToken) var githubToken
-
+    
     let ghClient = GitHubClient()
     var statusBarItem: NSStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let menu: NSMenu = NSMenu()
-
+    
     var preferencesWindow: NSWindow!
     var aboutWindow: NSWindow!
     
@@ -106,7 +106,7 @@ extension AppDelegate {
                 group.leave()
             }
         }
-            
+        
         if showCreated {
             group.enter()
             ghClient.getCreatedPulls() { pulls in
@@ -114,7 +114,7 @@ extension AppDelegate {
                 group.leave()
             }
         }
-
+        
         if showRequested {
             group.enter()
             ghClient.getReviewRequestedPulls() { pulls in
@@ -126,7 +126,7 @@ extension AppDelegate {
         group.notify(queue: .main) {
             
             let isOneSelected = (self.showAssigned.intValue + self.showCreated.intValue + self.showRequested.intValue) == 1
-
+            
             
             if let assignedPulls = assignedPulls, let createdPulls = createdPulls, let reviewRequestedPulls = reviewRequestedPulls {
                 
@@ -150,9 +150,9 @@ extension AppDelegate {
                     if isOneSelected {
                         self.statusBarItem.button?.title = String(createdPulls.count)
                     }
-
+                    
                 }
-
+                
                 if self.showRequested && !reviewRequestedPulls.isEmpty {
                     self.menu.addItem(NSMenuItem(title: "Review Requested (\(reviewRequestedPulls.count))", action: nil, keyEquivalent: ""))
                     for pull in reviewRequestedPulls {
@@ -162,7 +162,7 @@ extension AppDelegate {
                     if isOneSelected {
                         self.statusBarItem.button?.title = String(reviewRequestedPulls.count)
                     }
-
+                    
                 }
                 
                 
@@ -181,14 +181,14 @@ extension AppDelegate {
             .appendString(string: pull.node.isDraft ? "Draft" : "Open", color: pull.node.isDraft ? NSColor.secondaryLabelColor : NSColor(named: "green")!)
         
         issueItemTitle.appendNewLine()
-
+        
         issueItemTitle
             .appendIcon(iconName: "repo")
             .appendString(string: pull.node.repository.name)
             .appendSeparator()
             .appendIcon(iconName: "person")
             .appendString(string: pull.node.author.login)
-                
+        
         if !pull.node.labels.nodes.isEmpty && self.showLabels {
             issueItemTitle
                 .appendNewLine()
@@ -197,7 +197,7 @@ extension AppDelegate {
                 issueItemTitle
                     .appendString(string: label.name, color: hexColor(hex: label.color), fontSize: NSFont.smallSystemFontSize)
                     .appendSeparator()
-           }
+            }
         }
         
         issueItemTitle.appendNewLine()
@@ -212,7 +212,7 @@ extension AppDelegate {
             .appendSeparator()
             .appendIcon(iconName: "calendar")
             .appendString(string: pull.node.createdAt.getElapsedInterval())
-
+        
         if showAvatar {
             var image = NSImage()
             if let imageURL = pull.node.author.avatarUrl {
@@ -229,39 +229,90 @@ extension AppDelegate {
         
         
         if let commits = pull.node.commits {
-            if commits.nodes[0].commit.checkSuites.nodes.count > 0 {
-                issueItem.submenu = NSMenu()
-                issueItemTitle
-                    .appendSeparator()
-                    .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
-            }
-            for checkSuite in commits.nodes[0].commit.checkSuites.nodes {
+            
+            if let checkSuites = commits.nodes[0].commit.checkSuites {
                 
-                if checkSuite.checkRuns.nodes.count > 0 {
-                    issueItem.submenu?.addItem(withTitle: checkSuite.app?.name ?? "empty", action: nil, keyEquivalent: "")
+                if checkSuites.nodes.count > 0 {
+                    issueItem.submenu = NSMenu()
+                    issueItemTitle
+                        .appendSeparator()
+                        .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
                 }
-                for check in checkSuite.checkRuns.nodes {
+                for checkSuite in checkSuites.nodes {
                     
-                    let buildItem = NSMenuItem(title: check.name, action: #selector(self.openLink), keyEquivalent: "")
-                    buildItem.representedObject = check.detailsUrl
-                    buildItem.toolTip = check.conclusion
-                    if check.conclusion  == "SUCCESS" {
+                    if checkSuite.checkRuns.nodes.count > 0 {
+                        issueItem.submenu?.addItem(withTitle: checkSuite.app?.name ?? "empty", action: nil, keyEquivalent: "")
+                    }
+                    for check in checkSuite.checkRuns.nodes {
+                        
+                        let buildItem = NSMenuItem(title: check.name, action: #selector(self.openLink), keyEquivalent: "")
+                        buildItem.representedObject = check.detailsUrl
+                        buildItem.toolTip = check.conclusion
+                        if check.conclusion  == "SUCCESS" {
+                            buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
+                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
+                        } else if check.conclusion  == "FAILURE" {
+                            buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
+                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
+                        } else if check.conclusion  == "ACTION_REQUIRED" {
+                            buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
+                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
+                        } else {
+                            buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
+                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
+                        }
+                        
+                        issueItem.submenu?.addItem(buildItem)
+                    }
+                }
+            }
+            
+            else if let statusCheckRollup = commits.nodes[0].commit.statusCheckRollup {
+                
+                if statusCheckRollup.contexts.nodes.count > 0 {
+                    issueItem.submenu = NSMenu()
+                    issueItemTitle
+                        .appendSeparator()
+                        .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
+                }
+                
+                for check in statusCheckRollup.contexts.nodes {
+                    let itemTitle = NSMutableAttributedString()
+                    itemTitle.appendString(string: check.name ?? check.context ?? "<empty>", color: NSColor(.primary))
+                    itemTitle.appendNewLine()
+                        .appendString(string: check.description ?? check.title ?? "<empty>", color: NSColor(.secondary))
+                    
+                    let buildItem = NSMenuItem(title: "", action: #selector(AppDelegate.openLink), keyEquivalent: "")
+                    buildItem.attributedTitle = itemTitle
+                    
+                    buildItem.representedObject = check.detailsUrl ?? URL.init(string:check.targetUrl ?? "")
+                    
+                    buildItem.toolTip = check.conclusion ?? check.state ?? ""
+                    
+                    let status = check.conclusion ?? check.state ?? ""
+                    switch status {
+                    case "SUCCESS":
                         buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
                         issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
-                    } else if check.conclusion  == "FAILURE" {
+                    case "FAILURE":
                         buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
                         issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
-                    } else if check.conclusion  == "ACTION_REQUIRED" {
+                    case "PENDING":
                         buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
                         issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
-                    } else {
+                    default:
                         buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
                         issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
+                        
                     }
                     
                     issueItem.submenu?.addItem(buildItem)
                 }
+                
+                
+                
             }
+            
         }
         
         issueItem.attributedTitle = issueItemTitle
@@ -299,7 +350,7 @@ extension AppDelegate {
         preferencesWindow.contentView = NSHostingView(rootView: contentView)
         preferencesWindow.makeKeyAndOrderFront(nil)
         preferencesWindow.styleMask.remove(.resizable)
-
+        
         // allow the preference window can be focused automatically when opened
         NSApplication.shared.activate(ignoringOtherApps: true)
         
@@ -328,7 +379,7 @@ extension AppDelegate {
         aboutWindow.contentView = NSHostingView(rootView: contentView)
         aboutWindow.makeKeyAndOrderFront(nil)
         aboutWindow.styleMask.remove(.resizable)
-
+        
         // allow the preference window can be focused automatically when opened
         NSApplication.shared.activate(ignoringOtherApps: true)
         

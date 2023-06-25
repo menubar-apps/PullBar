@@ -16,6 +16,7 @@ public class GitHubClient {
     @FromKeychain(.githubToken) var githubToken
     
     @Default(.showChecks) var showChecks
+    @Default(.showCommitStatus) var showCommitStatus
     
     func getAssignedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
         
@@ -111,6 +112,35 @@ public class GitHubClient {
     
     private func buildGraphQlQuery(queryString: String) -> String {
         
+        let commitStatus = """
+        commits(last: 1) {
+            nodes {
+                commit {
+                    statusCheckRollup {
+                        state
+                        contexts (first: 20) {
+                            nodes {
+                                ... on StatusContext {
+                                    context
+                                    description
+                                    state
+                                    targetUrl
+                                    description
+                                }
+                                ... on CheckRun {
+                                    name
+                                    conclusion
+                                    detailsUrl
+                                    title
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+        
         let commits = """
         commits(last: 1) {
             nodes {
@@ -175,6 +205,7 @@ public class GitHubClient {
                                 }
                             }
                             \(showChecks ? commits : "")
+                            \(showCommitStatus ? commitStatus : "")
                         }
                     }
                 }

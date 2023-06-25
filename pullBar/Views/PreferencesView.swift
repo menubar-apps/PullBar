@@ -20,6 +20,7 @@ struct PreferencesView: View {
     
     @Default(.showAvatar) var showAvatar
     @Default(.showChecks) var showChecks
+    @Default(.showCommitStatus) var showCommitStatus
     @Default(.showLabels) var showLabels
     
     @Default(.refreshRate) var refreshRate
@@ -27,47 +28,63 @@ struct PreferencesView: View {
     @State private var showGhAlert = false
     
     @StateObject private var githubTokenValidator = GithubTokenValidator()
-
+    
     var body: some View {
         Form {
             Section {
                 VStack(alignment: .leading) {
-                    HStack(alignment: .center) {
-                        Text("GitHub username:").frame(width: 120, alignment: .trailing)
-                        TextField("", text: $githubUsername)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .disableAutocorrection(true)
-                            .textContentType(.password)
-                            .frame(width: 200)
-                    }
-                    
-                    HStack(alignment: .center) {
-                        Text("GitHub token:").frame(width: 120, alignment: .trailing)
-                        VStack(alignment: .leading) {
-                            HStack() {
-                                SecureField("", text: $githubToken)
+                    Text("Authentication")
+                        .font(.callout)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 20)
+                    Form {
+                        Section {
+                            HStack(alignment: .center) {
+                                Text("GitHub username:").frame(width: 120, alignment: .trailing)
+                                TextField("", text: $githubUsername)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .overlay(
-                                        Image(systemName: githubTokenValidator.iconName).foregroundColor(githubTokenValidator.iconColor)
-                                            .frame(maxWidth: .infinity, alignment: .trailing)
-                                            .padding(.trailing, 8)
-                                        )
-                                    .frame(width: 380)
-                                    .onChange(of: githubToken) { _ in
-                                        githubTokenValidator.validate()
-                                    }
-                                Button {
-                                    githubTokenValidator.validate()
-                                } label: {
-                                    Image(systemName: "repeat")
-                                }
-                                .help("Retry")
+                                    .disableAutocorrection(true)
+                                    .textContentType(.password)
+                                    .frame(width: 200)
                             }
-                            Text("[Generate](https://github.com/settings/tokens/new?scopes=repo) a personal access token, make sure to select **repo** scope")
-                                .font(.footnote)
+                            
+                            HStack(alignment: .center) {
+                                Text("GitHub token:").frame(width: 120, alignment: .trailing)
+                                VStack(alignment: .leading) {
+                                    HStack() {
+                                        SecureField("", text: $githubToken)
+                                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                                            .overlay(
+                                                Image(systemName: githubTokenValidator.iconName).foregroundColor(githubTokenValidator.iconColor)
+                                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                                    .padding(.trailing, 8)
+                                            )
+                                            .frame(width: 380)
+                                            .onChange(of: githubToken) { _ in
+                                                githubTokenValidator.validate()
+                                            }
+                                        Button {
+                                            githubTokenValidator.validate()
+                                        } label: {
+                                            Image(systemName: "repeat")
+                                        }
+                                        .help("Retry")
+                                    }
+                                    Text("[Generate](https://github.com/settings/tokens/new?scopes=repo) a personal access token, make sure to select **repo** scope")
+                                        .font(.footnote)
+                                }
+                            }
                         }
                     }
-                    Divider()
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(.lightGray), lineWidth: 1)
+                    )
+                    
+
                     HStack(alignment: .center) {
                         Text("Show pull requests:").frame(width: 120, alignment: .trailing)
                         VStack(alignment: .leading){
@@ -81,15 +98,18 @@ struct PreferencesView: View {
                         Text("Show Avatar:").frame(width: 120, alignment: .trailing)
                         Toggle("", isOn: $showAvatar)
                     }
-
+                    
                     HStack(alignment: .center) {
                         Text("Show Labels:").frame(width: 120, alignment: .trailing)
                         Toggle("", isOn: $showLabels)
                     }
                     
                     HStack(alignment: .center) {
-                        Text("Show Checks:").frame(width: 120, alignment: .trailing)
-                        Toggle("", isOn: $showChecks)
+                        Text("Build:").frame(width: 120, alignment: .trailing)
+                        VStack(alignment: .leading){
+                            Toggle("checks", isOn: $showChecks)
+                            Toggle("commit status", isOn: $showCommitStatus)
+                        }
                     }
                     
                     HStack(alignment: .center) {
