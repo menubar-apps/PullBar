@@ -19,8 +19,6 @@ struct PreferencesView: View {
     @Default(.showRequested) var showRequested
     
     @Default(.showAvatar) var showAvatar
-    @Default(.showChecks) var showChecks
-    @Default(.showCommitStatus) var showCommitStatus
     @Default(.showLabels) var showLabels
     
     @Default(.refreshRate) var refreshRate

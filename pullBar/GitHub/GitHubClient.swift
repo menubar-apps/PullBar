@@ -14,9 +14,7 @@ public class GitHubClient {
     
     @Default(.githubUsername) var githubUsername
     @FromKeychain(.githubToken) var githubToken
-    
-    @Default(.showChecks) var showChecks
-    @Default(.showCommitStatus) var showCommitStatus
+
     @Default(.buildType) var buildType
     
     func getAssignedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
@@ -113,11 +111,11 @@ public class GitHubClient {
     
     private func buildGraphQlQuery(queryString: String) -> String {
         
-        var c = ""
+        var build = ""
         
         switch buildType {
         case .checks:
-            c = """
+            build = """
         commits(last: 1) {
             nodes {
                 commit {
@@ -141,7 +139,7 @@ public class GitHubClient {
         }
         """
         case .commitStatus:
-            c = """
+            build = """
         commits(last: 1) {
             nodes {
                 commit {
@@ -170,7 +168,7 @@ public class GitHubClient {
         }
         """
         default:
-            c = ""
+            build = ""
         }
         
         
@@ -215,14 +213,14 @@ public class GitHubClient {
                                     }
                                 }
                             }
-                            \(c)
+                            \(build)
                         }
                     }
                 }
             }
         }
-
-
+        
+        
         """
     }
     
@@ -252,7 +250,7 @@ public class GitHubClient {
 
 class GithubDecoder: JSONDecoder {
     let dateFormatter = DateFormatter()
-
+    
     override init() {
         super.init()
         dateDecodingStrategy = .iso8601

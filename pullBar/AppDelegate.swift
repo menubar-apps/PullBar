@@ -19,7 +19,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @Default(.showRequested) var showRequested
     
     @Default(.showAvatar) var showAvatar
-    @Default(.showChecks) var showChecks
     @Default(.showLabels) var showLabels
     
     @Default(.refreshRate) var refreshRate
@@ -177,7 +176,7 @@ extension AppDelegate {
         
         let issueItemTitle = NSMutableAttributedString(string: "")
             .appendString(string: pull.node.isReadByViewer ? "" : "⏺ ", color: .systemBlue)
-
+        
         if (pull.node.isDraft) {
             issueItemTitle
                 .appendIcon(iconName: "git-draft-pull-request", color: NSColor.secondaryLabelColor)
