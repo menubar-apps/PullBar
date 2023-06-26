@@ -19,91 +19,129 @@ struct PreferencesView: View {
     @Default(.showRequested) var showRequested
     
     @Default(.showAvatar) var showAvatar
-    @Default(.showChecks) var showChecks
     @Default(.showLabels) var showLabels
     
     @Default(.refreshRate) var refreshRate
+    @Default(.buildType) var builtType
     
     @State private var showGhAlert = false
     
     @StateObject private var githubTokenValidator = GithubTokenValidator()
-
+    
     var body: some View {
         Form {
             Section {
                 VStack(alignment: .leading) {
-                    HStack(alignment: .center) {
-                        Text("GitHub username:").frame(width: 120, alignment: .trailing)
-                        TextField("", text: $githubUsername)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .disableAutocorrection(true)
-                            .textContentType(.password)
-                            .frame(width: 200)
-                    }
-                    
-                    HStack(alignment: .center) {
-                        Text("GitHub token:").frame(width: 120, alignment: .trailing)
-                        VStack(alignment: .leading) {
-                            HStack() {
-                                SecureField("", text: $githubToken)
+                    Text("Authentication")
+                        .font(.callout)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 20)
+                    Form {
+                        Section {
+                            HStack(alignment: .center) {
+                                Text("GitHub username:").frame(width: 120, alignment: .trailing)
+                                TextField("", text: $githubUsername)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .overlay(
-                                        Image(systemName: githubTokenValidator.iconName).foregroundColor(githubTokenValidator.iconColor)
-                                            .frame(maxWidth: .infinity, alignment: .trailing)
-                                            .padding(.trailing, 8)
-                                        )
-                                    .frame(width: 380)
-                                    .onChange(of: githubToken) { _ in
-                                        githubTokenValidator.validate()
-                                    }
-                                Button {
-                                    githubTokenValidator.validate()
-                                } label: {
-                                    Image(systemName: "repeat")
-                                }
-                                .help("Retry")
+                                    .disableAutocorrection(true)
+                                    .textContentType(.password)
+                                    .frame(width: 200)
                             }
-                            Text("[Generate](https://github.com/settings/tokens/new?scopes=repo) a personal access token, make sure to select **repo** scope")
-                                .font(.footnote)
+                            
+                            HStack(alignment: .center) {
+                                Text("GitHub token:").frame(width: 120, alignment: .trailing)
+                                VStack(alignment: .leading) {
+                                    HStack() {
+                                        SecureField("", text: $githubToken)
+                                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                                            .overlay(
+                                                Image(systemName: githubTokenValidator.iconName).foregroundColor(githubTokenValidator.iconColor)
+                                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                                    .padding(.trailing, 8)
+                                            )
+                                            .frame(width: 380)
+                                            .onChange(of: githubToken) { _ in
+                                                githubTokenValidator.validate()
+                                            }
+                                        Button {
+                                            githubTokenValidator.validate()
+                                        } label: {
+                                            Image(systemName: "repeat")
+                                        }
+                                        .help("Retry")
+                                    }
+                                    Text("[Generate](https://github.com/settings/tokens/new?scopes=repo) a personal access token, make sure to select **repo** scope")
+                                        .font(.footnote)
+                                }
+                            }
                         }
                     }
-                    Divider()
-                    HStack(alignment: .center) {
-                        Text("Show pull requests:").frame(width: 120, alignment: .trailing)
-                        VStack(alignment: .leading){
-                            Toggle("assigned", isOn: $showAssigned)
-                            Toggle("created", isOn: $showCreated)
-                            Toggle("review requested", isOn: $showRequested)
-                        }
-                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(.lightGray), lineWidth: 1)
+                    )
                     
-                    HStack(alignment: .center) {
-                        Text("Show Avatar:").frame(width: 120, alignment: .trailing)
-                        Toggle("", isOn: $showAvatar)
-                    }
 
-                    HStack(alignment: .center) {
-                        Text("Show Labels:").frame(width: 120, alignment: .trailing)
-                        Toggle("", isOn: $showLabels)
+                    Text("General")
+                        .font(.callout)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 20)
+                    Form {
+                        Section {
+                            HStack(alignment: .center) {
+                                Text("Pull Requests:").frame(width: 120, alignment: .trailing)
+                                VStack(alignment: .leading){
+                                    Toggle("assigned", isOn: $showAssigned)
+                                    Toggle("created", isOn: $showCreated)
+                                    Toggle("review requested", isOn: $showRequested)
+                                }
+                            }
+                            
+                            HStack(alignment: .center) {
+                                Text("Build Information:").frame(width: 120, alignment: .trailing)
+                                Picker("", selection: $builtType, content: {
+                                    ForEach(BuildType.allCases) { bt in
+                                        Text(bt.description)
+                                    }
+                                })
+                                .labelsHidden()
+                                .pickerStyle(RadioGroupPickerStyle())
+                                .frame(width: 120)
+                            }
+                            
+                            HStack(alignment: .center) {
+                                Text("Show Avatar:").frame(width: 120, alignment: .trailing)
+                                Toggle("", isOn: $showAvatar)
+                            }
+                            
+                            HStack(alignment: .center) {
+                                Text("Show Labels:").frame(width: 120, alignment: .trailing)
+                                Toggle("", isOn: $showLabels)
+                            }
+                            
+                            HStack(alignment: .center) {
+                                Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
+                                Picker("", selection: $refreshRate, content: {
+                                    Text("1 minute").tag(1)
+                                    Text("5 minutes").tag(5)
+                                    Text("10 minutes").tag(10)
+                                    Text("15 minutes").tag(15)
+                                    Text("30 minutes").tag(30)
+                                }).labelsHidden()
+                                    .pickerStyle(MenuPickerStyle())
+                                    .frame(width: 100)
+                            }
+                        }
                     }
-                    
-                    HStack(alignment: .center) {
-                        Text("Show Checks:").frame(width: 120, alignment: .trailing)
-                        Toggle("", isOn: $showChecks)
-                    }
-                    
-                    HStack(alignment: .center) {
-                        Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
-                        Picker("", selection: $refreshRate, content: {
-                            Text("1 minute").tag(1)
-                            Text("5 minutes").tag(5)
-                            Text("10 minutes").tag(10)
-                            Text("15 minutes").tag(15)
-                            Text("30 minutes").tag(30)
-                        }).labelsHidden()
-                            .pickerStyle(MenuPickerStyle())
-                            .frame(width: 100)
-                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(.lightGray), lineWidth: 1)
+                    )
                 }
             }
         }

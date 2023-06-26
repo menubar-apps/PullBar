@@ -14,8 +14,8 @@ public class GitHubClient {
     
     @Default(.githubUsername) var githubUsername
     @FromKeychain(.githubToken) var githubToken
-    
-    @Default(.showChecks) var showChecks
+
+    @Default(.buildType) var buildType
     
     func getAssignedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
         
@@ -111,7 +111,11 @@ public class GitHubClient {
     
     private func buildGraphQlQuery(queryString: String) -> String {
         
-        let commits = """
+        var build = ""
+        
+        switch buildType {
+        case .checks:
+            build = """
         commits(last: 1) {
             nodes {
                 commit {
@@ -134,6 +138,40 @@ public class GitHubClient {
             }
         }
         """
+        case .commitStatus:
+            build = """
+        commits(last: 1) {
+            nodes {
+                commit {
+                    statusCheckRollup {
+                        state
+                        contexts (first: 20) {
+                            nodes {
+                                ... on StatusContext {
+                                    context
+                                    description
+                                    state
+                                    targetUrl
+                                    description
+                                }
+                                ... on CheckRun {
+                                    name
+                                    conclusion
+                                    detailsUrl
+                                    title
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+        default:
+            build = ""
+        }
+        
+        
         
         return """
         {
@@ -151,6 +189,7 @@ public class GitHubClient {
                             deletions
                             additions
                             isDraft
+                            isReadByViewer
                             author {
                                 login
                                 avatarUrl
@@ -174,14 +213,14 @@ public class GitHubClient {
                                     }
                                 }
                             }
-                            \(showChecks ? commits : "")
+                            \(build)
                         }
                     }
                 }
             }
         }
-
-
+        
+        
         """
     }
     
@@ -211,7 +250,7 @@ public class GitHubClient {
 
 class GithubDecoder: JSONDecoder {
     let dateFormatter = DateFormatter()
-
+    
     override init() {
         super.init()
         dateDecodingStrategy = .iso8601

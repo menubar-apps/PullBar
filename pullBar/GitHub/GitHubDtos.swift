@@ -63,6 +63,7 @@ struct Pull: Codable {
     var commits: CommitsNodes?
     var labels: Nodes<Label>
     var isDraft: Bool
+    var isReadByViewer: Bool
     
     enum CodingKeys: String, CodingKey {
         case url
@@ -78,6 +79,7 @@ struct Pull: Codable {
         case commits
         case labels
         case isDraft
+        case isReadByViewer
     }
 }
 
@@ -151,10 +153,12 @@ struct Commit: Codable, Hashable {
 }
 
 struct CheckSuites: Codable, Hashable {
-    var checkSuites: CheckSuitsNodes
+    var checkSuites: CheckSuitsNodes?
+    var statusCheckRollup: StatusCheckRollup?
     
     enum CodingKeys: String, CodingKey {
         case checkSuites
+        case statusCheckRollup
     }
 }
 
@@ -234,5 +238,45 @@ struct Label: Codable, Hashable {
     enum CodingKeys: String, CodingKey {
         case name
         case color
+    }
+}
+
+struct StatusCheckRollup: Codable, Hashable {
+    var state: String
+    var contexts: ContextNodes
+    
+    enum CodingKeys: String, CodingKey {
+        case state
+        case contexts
+    }
+}
+
+struct ContextNodes: Codable, Hashable {
+    var nodes: [ContextNode]
+    
+    enum CodingKeys: String, CodingKey {
+        case nodes
+    }
+}
+
+struct ContextNode: Codable, Hashable {
+    var name: String?
+    var context: String?
+    var conclusion: String?
+    var state: String?
+    var title: String?
+    var description: String?
+    var detailsUrl: URL?
+    var targetUrl: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case name
+        case context
+        case conclusion
+        case state
+        case title
+        case description
+        case detailsUrl
+        case targetUrl
     }
 }
