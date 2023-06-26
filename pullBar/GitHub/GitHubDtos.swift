@@ -63,6 +63,7 @@ struct Pull: Codable {
     var commits: CommitsNodes?
     var labels: Nodes<Label>
     var isDraft: Bool
+    var isReadByViewer: Bool
     
     enum CodingKeys: String, CodingKey {
         case url
@@ -78,6 +79,7 @@ struct Pull: Codable {
         case commits
         case labels
         case isDraft
+        case isReadByViewer
     }
 }
 

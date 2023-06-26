@@ -17,6 +17,7 @@ public class GitHubClient {
     
     @Default(.showChecks) var showChecks
     @Default(.showCommitStatus) var showCommitStatus
+    @Default(.buildType) var buildType
     
     func getAssignedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
         
@@ -112,7 +113,35 @@ public class GitHubClient {
     
     private func buildGraphQlQuery(queryString: String) -> String {
         
-        let commitStatus = """
+        var c = ""
+        
+        switch buildType {
+        case .checks:
+            c = """
+        commits(last: 1) {
+            nodes {
+                commit {
+                    checkSuites(first: 10) {
+                        nodes {
+                            app {
+                                name
+                            }
+                            checkRuns(first: 10) {
+                                totalCount
+                                nodes {
+                                    name
+                                    conclusion
+                                    detailsUrl
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+        case .commitStatus:
+            c = """
         commits(last: 1) {
             nodes {
                 commit {
@@ -140,30 +169,11 @@ public class GitHubClient {
             }
         }
         """
-        
-        let commits = """
-        commits(last: 1) {
-            nodes {
-                commit {
-                    checkSuites(first: 10) {
-                        nodes {
-                            app {
-                                name
-                            }
-                            checkRuns(first: 10) {
-                                totalCount
-                                nodes {
-                                    name
-                                    conclusion
-                                    detailsUrl
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        default:
+            c = ""
         }
-        """
+        
+        
         
         return """
         {
@@ -181,6 +191,7 @@ public class GitHubClient {
                             deletions
                             additions
                             isDraft
+                            isReadByViewer
                             author {
                                 login
                                 avatarUrl
@@ -204,8 +215,7 @@ public class GitHubClient {
                                     }
                                 }
                             }
-                            \(showChecks ? commits : "")
-                            \(showCommitStatus ? commitStatus : "")
+                            \(c)
                         }
                     }
                 }

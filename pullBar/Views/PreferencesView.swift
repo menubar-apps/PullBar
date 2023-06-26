@@ -24,6 +24,7 @@ struct PreferencesView: View {
     @Default(.showLabels) var showLabels
     
     @Default(.refreshRate) var refreshRate
+    @Default(.buildType) var builtType
     
     @State private var showGhAlert = false
     
@@ -85,45 +86,64 @@ struct PreferencesView: View {
                     )
                     
 
-                    HStack(alignment: .center) {
-                        Text("Show pull requests:").frame(width: 120, alignment: .trailing)
-                        VStack(alignment: .leading){
-                            Toggle("assigned", isOn: $showAssigned)
-                            Toggle("created", isOn: $showCreated)
-                            Toggle("review requested", isOn: $showRequested)
+                    Text("General")
+                        .font(.callout)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 20)
+                    Form {
+                        Section {
+                            HStack(alignment: .center) {
+                                Text("Pull Requests:").frame(width: 120, alignment: .trailing)
+                                VStack(alignment: .leading){
+                                    Toggle("assigned", isOn: $showAssigned)
+                                    Toggle("created", isOn: $showCreated)
+                                    Toggle("review requested", isOn: $showRequested)
+                                }
+                            }
+                            
+                            HStack(alignment: .center) {
+                                Text("Build Information:").frame(width: 120, alignment: .trailing)
+                                Picker("", selection: $builtType, content: {
+                                    ForEach(BuildType.allCases) { bt in
+                                        Text(bt.description)
+                                    }
+                                })
+                                .labelsHidden()
+                                .pickerStyle(RadioGroupPickerStyle())
+                                .frame(width: 120)
+                            }
+                            
+                            HStack(alignment: .center) {
+                                Text("Show Avatar:").frame(width: 120, alignment: .trailing)
+                                Toggle("", isOn: $showAvatar)
+                            }
+                            
+                            HStack(alignment: .center) {
+                                Text("Show Labels:").frame(width: 120, alignment: .trailing)
+                                Toggle("", isOn: $showLabels)
+                            }
+                            
+                            HStack(alignment: .center) {
+                                Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
+                                Picker("", selection: $refreshRate, content: {
+                                    Text("1 minute").tag(1)
+                                    Text("5 minutes").tag(5)
+                                    Text("10 minutes").tag(10)
+                                    Text("15 minutes").tag(15)
+                                    Text("30 minutes").tag(30)
+                                }).labelsHidden()
+                                    .pickerStyle(MenuPickerStyle())
+                                    .frame(width: 100)
+                            }
                         }
                     }
-                    
-                    HStack(alignment: .center) {
-                        Text("Show Avatar:").frame(width: 120, alignment: .trailing)
-                        Toggle("", isOn: $showAvatar)
-                    }
-                    
-                    HStack(alignment: .center) {
-                        Text("Show Labels:").frame(width: 120, alignment: .trailing)
-                        Toggle("", isOn: $showLabels)
-                    }
-                    
-                    HStack(alignment: .center) {
-                        Text("Build:").frame(width: 120, alignment: .trailing)
-                        VStack(alignment: .leading){
-                            Toggle("checks", isOn: $showChecks)
-                            Toggle("commit status", isOn: $showCommitStatus)
-                        }
-                    }
-                    
-                    HStack(alignment: .center) {
-                        Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
-                        Picker("", selection: $refreshRate, content: {
-                            Text("1 minute").tag(1)
-                            Text("5 minutes").tag(5)
-                            Text("10 minutes").tag(10)
-                            Text("15 minutes").tag(15)
-                            Text("30 minutes").tag(30)
-                        }).labelsHidden()
-                            .pickerStyle(MenuPickerStyle())
-                            .frame(width: 100)
-                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(.lightGray), lineWidth: 1)
+                    )
                 }
             }
         }

@@ -21,8 +21,29 @@ extension Defaults.Keys {
     static let showLabels = Key<Bool>("showLabels", default: true)
     
     static let refreshRate = Key<Int>("refreshRate", default: 5)
+    static let buildType = Key<BuildType>("buildType", default: .none)
 }
 
 extension KeychainKeys {
     static let githubToken: KeychainAccessKey = KeychainAccessKey(key: "githubToken")
+}
+
+enum BuildType: String, Defaults.Serializable, CaseIterable, Identifiable {
+    case checks
+    case commitStatus
+    case none
+    
+    var id: Self { self }
+
+    var description: String {
+
+        switch self {
+        case .checks:
+            return "checks"
+        case .commitStatus:
+            return "commit statuses"
+        case .none:
+            return "none"
+        }
+    }
 }

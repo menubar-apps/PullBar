@@ -23,6 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @Default(.showLabels) var showLabels
     
     @Default(.refreshRate) var refreshRate
+    @Default(.buildType) var buildType
     
     @Default(.githubUsername) var githubUsername
     @FromKeychain(.githubToken) var githubToken
@@ -174,11 +175,18 @@ extension AppDelegate {
     func createMenuItem(pull: Edge) -> NSMenuItem {
         let issueItem = NSMenuItem(title: "", action: #selector(self.openLink), keyEquivalent: "")
         
-        let issueItemTitle = NSMutableAttributedString(string: pull.node.title.trunc(length: 50))
+        let issueItemTitle = NSMutableAttributedString(string: "")
+            .appendString(string: pull.node.isReadByViewer ? "" : "⏺ ", color: .systemBlue)
+
+        if (pull.node.isDraft) {
+            issueItemTitle
+                .appendIcon(iconName: "git-draft-pull-request", color: NSColor.secondaryLabelColor)
+        }
+        
+        issueItemTitle
+            .appendString(string: pull.node.title.trunc(length: 50), color: NSColor(.primary))
             .appendString(string: " #" +  String(pull.node.number))
             .appendSeparator()
-            .appendIcon(iconName: pull.node.isDraft ? "git-draft-pull-request" : "git-pull-request", color: pull.node.isDraft ? NSColor.secondaryLabelColor : NSColor(named: "green")!)
-            .appendString(string: pull.node.isDraft ? "Draft" : "Open", color: pull.node.isDraft ? NSColor.secondaryLabelColor : NSColor(named: "green")!)
         
         issueItemTitle.appendNewLine()
         
@@ -340,7 +348,7 @@ extension AppDelegate {
             preferencesWindow.close()
         }
         preferencesWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 500),
             styleMask: [.closable, .titled],
             backing: .buffered,
             defer: false
