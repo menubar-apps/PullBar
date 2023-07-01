@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7629FBD02A4F713300081779 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 7629FBCF2A4F713300081779 /* LaunchAtLogin */; };
 		768A4C5528AF253C004E557E /* BottomItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 768A4C5428AF253C004E557E /* BottomItemView.swift */; };
 		769F4E1B2765A2B900594911 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E1A2765A2B900594911 /* AboutView.swift */; };
 		769F4E7B277B97B300594911 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7A277B97B300594911 /* Notifications.swift */; };
@@ -56,6 +57,7 @@
 			files = (
 				8CECBBF82742ABDA00A2802D /* Defaults in Frameworks */,
 				8CECBBFB2742ABE600A2802D /* Alamofire in Frameworks */,
+				7629FBD02A4F713300081779 /* LaunchAtLogin in Frameworks */,
 				76D5F9E428D28958009EBD80 /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -137,6 +139,7 @@
 				8CECBBDB2742AAF800A2802D /* Sources */,
 				8CECBBDC2742AAF800A2802D /* Frameworks */,
 				8CECBBDD2742AAF800A2802D /* Resources */,
+				7629FBD12A4F7AB700081779 /* Copy “Launch at Login Helper” */,
 			);
 			buildRules = (
 			);
@@ -147,6 +150,7 @@
 				8CECBBF72742ABDA00A2802D /* Defaults */,
 				8CECBBFA2742ABE600A2802D /* Alamofire */,
 				76D5F9E328D28958009EBD80 /* KeychainAccess */,
+				7629FBCF2A4F713300081779 /* LaunchAtLogin */,
 			);
 			productName = pullBar;
 			productReference = 8CECBBDF2742AAF800A2802D /* pullBar.app */;
@@ -180,6 +184,7 @@
 				8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */,
 				8CECBBF92742ABE600A2802D /* XCRemoteSwiftPackageReference "Alamofire" */,
 				76D5F9E228D28958009EBD80 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				7629FBCE2A4F713300081779 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */,
 			);
 			productRefGroup = 8CECBBE02742AAF800A2802D /* Products */;
 			projectDirPath = "";
@@ -201,6 +206,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		7629FBD12A4F7AB700081779 /* Copy “Launch at Login Helper” */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy “Launch at Login Helper”";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\"${BUILT_PRODUCTS_DIR}/LaunchAtLogin_LaunchAtLogin.bundle/Contents/Resources/copy-helper-swiftpm.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8CECBBDB2742AAF800A2802D /* Sources */ = {
@@ -362,7 +389,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -374,7 +401,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = debug.com.pavelmakhov.pullBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -391,7 +418,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -403,7 +430,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pavelmakhov.pullBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -435,6 +462,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		7629FBCE2A4F713300081779 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		76D5F9E228D28958009EBD80 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess";
@@ -462,6 +497,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		7629FBCF2A4F713300081779 /* LaunchAtLogin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7629FBCE2A4F713300081779 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */;
+			productName = LaunchAtLogin;
+		};
 		76D5F9E328D28958009EBD80 /* KeychainAccess */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 76D5F9E228D28958009EBD80 /* XCRemoteSwiftPackageReference "KeychainAccess" */;

@@ -8,6 +8,7 @@
 import SwiftUI
 import Defaults
 import KeychainAccess
+import LaunchAtLogin
 
 struct PreferencesView: View {
     
@@ -27,7 +28,8 @@ struct PreferencesView: View {
     @State private var showGhAlert = false
     
     @StateObject private var githubTokenValidator = GithubTokenValidator()
-    
+    @ObservedObject private var launchAtLogin = LaunchAtLogin.observable
+
     var body: some View {
         Form {
             Section {
@@ -134,6 +136,13 @@ struct PreferencesView: View {
                                     .pickerStyle(MenuPickerStyle())
                                     .frame(width: 100)
                             }
+                            
+                            HStack(alignment: .center) {
+                                Text("Launch at login:").frame(width: 120, alignment: .trailing)
+                                Toggle("", isOn: $launchAtLogin.isEnabled)
+
+                            }
+
                         }
                     }
                     .padding()
