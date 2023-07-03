@@ -16,7 +16,7 @@ jobs:
         # Required, custom GitHub access token with only the 'public_repo' scope enabled
         token: ${{ secrets.HOMEBREW_PULLBAR_PUBLISH_TOKEN }}
         # Bump all outdated casks in this tap
-        tap: menubar-apps/homebrew-pullbar
+        tap: menubar-apps/homebrew-menubar-apps
         # Bump only these casks if outdated
         cask: pullbar
         livecheck: true
