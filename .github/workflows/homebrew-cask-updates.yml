@@ -8,7 +8,6 @@ on:
 
 jobs:
   bump-casks:
-    runs-on: macos-latest
     steps:
     - name: Publish release
       uses: macauley/action-homebrew-bump-cask@v1
