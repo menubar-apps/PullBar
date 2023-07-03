@@ -1,0 +1,23 @@
+name: Homebrew cask updates
+
+on:
+  release:
+    types: [published]
+  # Manual trigger from the UI
+  workflow_dispatch:
+
+jobs:
+  bump-casks:
+    runs-on: macos-latest
+    steps:
+    - name: Publish release
+      uses: macauley/action-homebrew-bump-cask@v1
+      with:
+        # Required, custom GitHub access token with only the 'public_repo' scope enabled
+        token: ${{ secrets.HOMEBREW_PULLBAR_PUBLISH_TOKEN }}
+        # Bump all outdated casks in this tap
+        tap: menubar-apps/homebrew-pullbar
+        # Bump only these casks if outdated
+        cask: pullbar
+        livecheck: true
+        dryrun: false
