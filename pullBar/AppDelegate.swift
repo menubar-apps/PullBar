@@ -23,6 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @Default(.refreshRate) var refreshRate
     @Default(.buildType) var buildType
+    @Default(.counterType) var counterType
     
     @Default(.githubUsername) var githubUsername
     @FromKeychain(.githubToken) var githubToken
@@ -84,19 +85,18 @@ extension AppDelegate {
     func refreshMenu() {
         NSLog("Refreshing menu")
         self.menu.removeAllItems()
-        self.statusBarItem.button?.title = ""
-        
+
         if (githubUsername == "" || githubToken == "") {
             addMenuFooterItems()
             return
         }
-        
-        
+
+
         var assignedPulls: [Edge]? = []
         var createdPulls: [Edge]? = []
         var reviewRequestedPulls: [Edge]? = []
-        
-        
+
+
         let group = DispatchGroup()
         
         if showAssigned {
@@ -106,7 +106,7 @@ extension AppDelegate {
                 group.leave()
             }
         }
-        
+
         if showCreated {
             group.enter()
             ghClient.getCreatedPulls() { pulls in
@@ -114,7 +114,7 @@ extension AppDelegate {
                 group.leave()
             }
         }
-        
+
         if showRequested {
             group.enter()
             ghClient.getReviewRequestedPulls() { pulls in
@@ -122,47 +122,46 @@ extension AppDelegate {
                 group.leave()
             }
         }
-        
+
         group.notify(queue: .main) {
             
-            let isOneSelected = (self.showAssigned.intValue + self.showCreated.intValue + self.showRequested.intValue) == 1
-            
-            
             if let assignedPulls = assignedPulls, let createdPulls = createdPulls, let reviewRequestedPulls = reviewRequestedPulls {
-                
+                self.statusBarItem.button?.title = ""
+
                 if self.showAssigned && !assignedPulls.isEmpty {
+                    if self.counterType == .assigned {
+                        self.statusBarItem.button?.title = String(assignedPulls.count)
+                    }
+
                     self.menu.addItem(NSMenuItem(title: "Assigned (\(assignedPulls.count))", action: nil, keyEquivalent: ""))
                     for pull in assignedPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
                     self.menu.addItem(.separator())
-                    if isOneSelected {
-                        self.statusBarItem.button?.title = String(assignedPulls.count)
-                    }
                 }
                 
                 if self.showCreated && !createdPulls.isEmpty {
+                    if self.counterType == .created {
+                        self.statusBarItem.button?.title = String(createdPulls.count)
+                    }
+
                     self.menu.addItem(NSMenuItem(title: "Created (\(createdPulls.count))", action: nil, keyEquivalent: ""))
                     for pull in createdPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
                     self.menu.addItem(.separator())
-                    if isOneSelected {
-                        self.statusBarItem.button?.title = String(createdPulls.count)
-                    }
-                    
                 }
-                
+
                 if self.showRequested && !reviewRequestedPulls.isEmpty {
+                    if self.counterType == .reviewRequested {
+                        self.statusBarItem.button?.title = String(reviewRequestedPulls.count)
+                    }
+
                     self.menu.addItem(NSMenuItem(title: "Review Requested (\(reviewRequestedPulls.count))", action: nil, keyEquivalent: ""))
                     for pull in reviewRequestedPulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
                     self.menu.addItem(.separator())
-                    if isOneSelected {
-                        self.statusBarItem.button?.title = String(reviewRequestedPulls.count)
-                    }
-                    
                 }
                 
                 
@@ -312,14 +311,9 @@ extension AppDelegate {
                         issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
                         
                     }
-                    
                     issueItem.submenu?.addItem(buildItem)
                 }
-                
-                
-                
             }
-            
         }
         
         issueItem.attributedTitle = issueItemTitle
@@ -347,7 +341,7 @@ extension AppDelegate {
             preferencesWindow.close()
         }
         preferencesWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 0, height: 0),
             styleMask: [.closable, .titled],
             backing: .buffered,
             defer: false
