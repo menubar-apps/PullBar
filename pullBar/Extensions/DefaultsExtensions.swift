@@ -20,6 +20,7 @@ extension Defaults.Keys {
     
     static let refreshRate = Key<Int>("refreshRate", default: 5)
     static let buildType = Key<BuildType>("buildType", default: .none)
+    static let counterType = Key<CounterType>("counterType", default: .reviewRequested)
 }
 
 extension KeychainKeys {
@@ -40,6 +41,29 @@ enum BuildType: String, Defaults.Serializable, CaseIterable, Identifiable {
             return "checks"
         case .commitStatus:
             return "commit statuses"
+        case .none:
+            return "none"
+        }
+    }
+}
+
+enum CounterType: String, Defaults.Serializable, CaseIterable, Identifiable {
+    case assigned
+    case created
+    case reviewRequested
+    case none
+    
+    var id: Self { self }
+
+    var description: String {
+
+        switch self {
+        case .assigned:
+            return "assigned"
+        case .created:
+            return "created"
+        case .reviewRequested:
+            return "review requested"
         case .none:
             return "none"
         }
