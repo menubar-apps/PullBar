@@ -24,10 +24,20 @@ Native MacOS menubar application to show GitHub Pull Requests in your menu bar! 
 
 # Installation
 
-[Download](https://github.com/menubar-apps/PullBar/releases/download/v1.5/pullBar.1.5.dmg) and install the latest release.
+There are 3 ways of installing the application: 
 
-Then [generate](https://github.com/settings/tokens/new?scopes=repo) a github access token (you'll need to have a repo scope selected) and paste it in the application preferences with your github username:
+ - [Mac App Store](https://apps.apple.com/ca/app/pullbar/id1601913905)
+ - Homebrew:
+    ```shell
+    brew tap menubar-apps/menubar-apps
+    brew install pullbar
+    ```
+ - [Download](https://github.com/menubar-apps/PullBar/releases) from github releases
+
+Then [generate](https://github.com/settings/tokens/new?scopes=repo) a github access token (you'll need to have a **repo** scope selected) and paste it in the application preferences with your github username:
+
+
 
 <p align="center">
-  <img width="612" alt="Screen Shot 2022-02-05 at 2 04 51 PM" src="https://user-images.githubusercontent.com/9363150/152655330-109e1e64-433c-49e3-a64a-477676b57dcc.png">
+  <img width="731" alt="Screenshot 2023-07-09 at 11 08 51 AM" src="https://github.com/menubar-apps/PullBar/assets/9363150/7ee9f73b-ef6e-4a14-8af9-53404f0133c5">
 </p>
