@@ -9,6 +9,7 @@ import Foundation
 import Defaults
 
 extension Defaults.Keys {
+    static let githubApiBaseUrl = Key<String>("githubApiBaseUrl", default: "https://api.github.com")
     static let githubUsername = Key<String>("githubUsername", default: "")
     
     static let showAssigned = Key<Bool>("showAssigned", default: false)

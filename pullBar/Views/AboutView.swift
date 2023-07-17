@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-import SwiftUI
-
 struct AboutView: View {
     let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String
 
