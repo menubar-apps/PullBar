@@ -12,6 +12,7 @@ import KeychainAccess
 
 public class GitHubClient {
     
+    @Default(.githubApiBaseUrl) var githubApiBaseUrl
     @Default(.githubUsername) var githubUsername
     @FromKeychain(.githubToken) var githubToken
 
@@ -35,7 +36,7 @@ public class GitHubClient {
             "variables":[]
         ] as [String: Any]
         
-        AF.request("https://api.github.com/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+        AF.request(githubApiBaseUrl + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
             .validate(statusCode: 200..<300)
             .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
                 switch response.result {
@@ -66,7 +67,7 @@ public class GitHubClient {
             "variables":[]
         ] as [String: Any]
         
-        AF.request("https://api.github.com/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+        AF.request(githubApiBaseUrl + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
             .validate(statusCode: 200..<300)
             .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
                 switch response.result {
@@ -96,7 +97,7 @@ public class GitHubClient {
             "variables":[]
         ] as [String: Any]
         
-        AF.request("https://api.github.com/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+        AF.request(githubApiBaseUrl + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
             .validate(statusCode: 200..<300)
             .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
                 switch response.result {
@@ -231,7 +232,7 @@ public class GitHubClient {
             .accept("application/json")
         ]
         
-        AF.request("https://api.github.com/user",
+        AF.request(githubApiBaseUrl + "/user",
                    method: .get,
                    headers: headers)
         .validate(statusCode: 200..<300)

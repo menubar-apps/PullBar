@@ -12,6 +12,7 @@ import LaunchAtLogin
 
 struct PreferencesView: View {
     
+    @Default(.githubApiBaseUrl) var githubApiBaseUrl
     @Default(.githubUsername) var githubUsername
     @FromKeychain(.githubToken) var githubToken
     
@@ -36,7 +37,15 @@ struct PreferencesView: View {
         TabView {
             Form {
                 HStack(alignment: .center) {
-                    Text("GitHub username:").frame(width: 120, alignment: .trailing)
+                    Text("API Base URL:").frame(width: 120, alignment: .trailing)
+                    TextField("", text: $githubApiBaseUrl)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .disableAutocorrection(true)
+                        .textContentType(.password)
+                        .frame(width: 200)
+                }
+                HStack(alignment: .center) {
+                    Text("Username:").frame(width: 120, alignment: .trailing)
                     TextField("", text: $githubUsername)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .disableAutocorrection(true)
@@ -45,7 +54,7 @@ struct PreferencesView: View {
                 }
                 
                 HStack(alignment: .center) {
-                    Text("GitHub token:").frame(width: 120, alignment: .trailing)
+                    Text("Token:").frame(width: 120, alignment: .trailing)
                     VStack(alignment: .leading) {
                         HStack() {
                             SecureField("", text: $githubToken)
