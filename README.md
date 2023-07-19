@@ -4,6 +4,7 @@
   <a href="https://github.com/menubar-apps/PullBar"><img src="https://img.shields.io/badge/-PullBar-black?logo=github&style=flat"></a>
   <img alt="GitHub all releases" src="https://img.shields.io/github/downloads/menubar-apps/pullbar/total">
   <img alt="GitHub top language" src="https://img.shields.io/github/languages/top/menubar-apps/pullbar">
+  <img alt="GitHub release (with filter)" src="https://img.shields.io/github/v/release/menubar-apps/pullbar">
 </p>
   
 <p align="center">
