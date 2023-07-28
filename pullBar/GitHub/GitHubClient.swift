@@ -29,7 +29,7 @@ public class GitHubClient {
             .accept("application/json")
         ]
         
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr assignee:\(githubUsername)")
+        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr assignee:\(githubUsername) archived:false")
         
         let parameters = [
             "query": graphQlQuery,
@@ -60,7 +60,7 @@ public class GitHubClient {
             .authorization(bearerToken: githubToken),
             .accept("application/json")
         ]
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr author:\(githubUsername)")
+        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr author:\(githubUsername) archived:false")
         
         let parameters = [
             "query": graphQlQuery,
@@ -90,7 +90,7 @@ public class GitHubClient {
             .authorization(bearerToken: githubToken),
             .accept("application/json")
         ]
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr review-requested:\(githubUsername)")
+        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr review-requested:\(githubUsername) archived:false")
         
         let parameters = [
             "query": graphQlQuery,
