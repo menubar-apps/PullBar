@@ -17,7 +17,7 @@ Native MacOS menubar application to show GitHub Pull Requests in your menu bar! 
   <img width="708" alt="Screen Shot 2022-07-17 at 9 06 36 PM" src="https://user-images.githubusercontent.com/9363150/179432557-f3db115e-fe9d-4f91-ac7c-0d85ce3f9e43.png">
 </p>
 
-If you liked the PullBar, check the [PullBar Pro](https://menubar-apps.github.io/#pull-bar-pro) - an improved version with more features!
+If you liked the PullBar, check the [PullBar Pro](https://menubar-apps.github.io/#pullbarpro) - an improved version with more features!
 
 # Features
 
