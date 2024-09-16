@@ -11,31 +11,91 @@ import KeychainAccess
 import LaunchAtLogin
 
 struct PreferencesView: View {
-    
+
     @Default(.githubApiBaseUrl) var githubApiBaseUrl
     @Default(.githubUsername) var githubUsername
     @Default(.githubAdditionalQuery) var githubAdditionalQuery
     @FromKeychain(.githubToken) var githubToken
-    
+
     @Default(.showAssigned) var showAssigned
     @Default(.showCreated) var showCreated
     @Default(.showRequested) var showRequested
-    
+
     @Default(.showAvatar) var showAvatar
     @Default(.showLabels) var showLabels
-    
+
     @Default(.refreshRate) var refreshRate
     @Default(.buildType) var builtType
     @Default(.counterType) var counterType
-    
+
     @State private var showGhAlert = false
     
+    @State private var selectedTab: Int = 1
+
     @StateObject private var githubTokenValidator = GithubTokenValidator()
     @ObservedObject private var launchAtLogin = LaunchAtLogin.observable
     
+    @State private var isExpanded: Bool = false
+
     var body: some View {
-        
-        TabView {
+
+        TabView (selection: $selectedTab) {
+            Form {
+                HStack(alignment: .center) {
+                    Text("Pull Requests:").frame(width: 120, alignment: .trailing)
+                    VStack(alignment: .leading){
+                        Toggle("assigned", isOn: $showAssigned)
+                        Toggle("created", isOn: $showCreated)
+                        Toggle("review requested", isOn: $showRequested)
+                    }
+                }
+
+                HStack(alignment: .center) {
+                    Text("Build Information:").frame(width: 120, alignment: .trailing)
+                    Picker("", selection: $builtType, content: {
+                        ForEach(BuildType.allCases) { bt in
+                            Text(bt.description)
+                        }
+                    })
+                    .labelsHidden()
+                    .pickerStyle(RadioGroupPickerStyle())
+                    .frame(width: 120)
+                }
+
+                HStack(alignment: .center) {
+                    Text("Show Avatar:").frame(width: 120, alignment: .trailing)
+                    Toggle("", isOn: $showAvatar)
+                }
+
+                HStack(alignment: .center) {
+                    Text("Show Labels:").frame(width: 120, alignment: .trailing)
+                    Toggle("", isOn: $showLabels)
+                }
+
+                HStack(alignment: .center) {
+                    Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
+                    Picker("", selection: $refreshRate, content: {
+                        Text("1 minute").tag(1)
+                        Text("5 minutes").tag(5)
+                        Text("10 minutes").tag(10)
+                        Text("15 minutes").tag(15)
+                        Text("30 minutes").tag(30)
+                    }).labelsHidden()
+                        .pickerStyle(MenuPickerStyle())
+                        .frame(width: 100)
+                }
+
+                HStack(alignment: .center) {
+                    Text("Launch at login:").frame(width: 120, alignment: .trailing)
+                    Toggle("", isOn: $launchAtLogin.isEnabled)
+
+                }
+
+            }
+            .padding(8)
+            .frame(maxWidth: .infinity)
+            .tabItem{Text("General")}
+            
             Form {
                 HStack(alignment: .center) {
                     Text("API Base URL:").frame(width: 120, alignment: .trailing)
@@ -53,14 +113,7 @@ struct PreferencesView: View {
                         .textContentType(.password)
                         .frame(width: 200)
                 }
-                HStack(alignment: .center) {
-                    Text("Additional Query:").frame(width: 120, alignment: .trailing)
-                    TextField("", text: $githubAdditionalQuery)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .disableAutocorrection(true)
-                        .textContentType(.password)
-                        .frame(width: 380)
-                }
+
                 HStack(alignment: .center) {
                     Text("Token:").frame(width: 120, alignment: .trailing)
                     VStack(alignment: .leading) {
@@ -96,62 +149,8 @@ struct PreferencesView: View {
                 githubTokenValidator.validate()
             }
             .tabItem{Text("Authentication")}
-            
-            Form {
-                HStack(alignment: .center) {
-                    Text("Pull Requests:").frame(width: 120, alignment: .trailing)
-                    VStack(alignment: .leading){
-                        Toggle("assigned", isOn: $showAssigned)
-                        Toggle("created", isOn: $showCreated)
-                        Toggle("review requested", isOn: $showRequested)
-                    }
-                }
-                
-                HStack(alignment: .center) {
-                    Text("Build Information:").frame(width: 120, alignment: .trailing)
-                    Picker("", selection: $builtType, content: {
-                        ForEach(BuildType.allCases) { bt in
-                            Text(bt.description)
-                        }
-                    })
-                    .labelsHidden()
-                    .pickerStyle(RadioGroupPickerStyle())
-                    .frame(width: 120)
-                }
-                
-                HStack(alignment: .center) {
-                    Text("Show Avatar:").frame(width: 120, alignment: .trailing)
-                    Toggle("", isOn: $showAvatar)
-                }
-                
-                HStack(alignment: .center) {
-                    Text("Show Labels:").frame(width: 120, alignment: .trailing)
-                    Toggle("", isOn: $showLabels)
-                }
-                
-                HStack(alignment: .center) {
-                    Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
-                    Picker("", selection: $refreshRate, content: {
-                        Text("1 minute").tag(1)
-                        Text("5 minutes").tag(5)
-                        Text("10 minutes").tag(10)
-                        Text("15 minutes").tag(15)
-                        Text("30 minutes").tag(30)
-                    }).labelsHidden()
-                        .pickerStyle(MenuPickerStyle())
-                        .frame(width: 100)
-                }
-                
-                HStack(alignment: .center) {
-                    Text("Launch at login:").frame(width: 120, alignment: .trailing)
-                    Toggle("", isOn: $launchAtLogin.isEnabled)
-                    
-                }
-            }
-            .padding(8)
-            .frame(maxWidth: .infinity)
-            .tabItem{Text("Menu")}
-            
+            .tag(1)
+
             Form {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading) {
@@ -173,9 +172,27 @@ struct PreferencesView: View {
             .frame(maxWidth: .infinity)
             .tabItem{Text("Menubar icon")}
 
+            Form {
+                HStack(alignment: .top) {
+                    Text("Additional Query:").frame(width: 120, alignment: .trailing)
+                    TextField("", text: $githubAdditionalQuery)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .disableAutocorrection(true)
+                        .textContentType(.password)
+                        .frame(width: 380)
+                  
+                }
+                Text("See the GitHub [search documentation](https://docs.github.com/en/search-github/getting-started-with-searching-on-github/understanding-the-search-syntax) for more information on advanced queries")
+                    .font(.footnote)
+                    .padding(.leading, 8)
+                    .foregroundColor(.secondary)
+            }.padding(8)
+                .frame(maxWidth: .infinity)
+                .tabItem{Text("Advanced")}
+
         }
         .padding()
-        
+
     }
 }
 
