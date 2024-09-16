@@ -14,6 +14,7 @@ struct PreferencesView: View {
     
     @Default(.githubApiBaseUrl) var githubApiBaseUrl
     @Default(.githubUsername) var githubUsername
+    @Default(.githubAdditionalQuery) var githubAdditionalQuery
     @FromKeychain(.githubToken) var githubToken
     
     @Default(.showAssigned) var showAssigned
@@ -52,7 +53,14 @@ struct PreferencesView: View {
                         .textContentType(.password)
                         .frame(width: 200)
                 }
-                
+                HStack(alignment: .center) {
+                    Text("Additional Query:").frame(width: 120, alignment: .trailing)
+                    TextField("", text: $githubAdditionalQuery)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .disableAutocorrection(true)
+                        .textContentType(.password)
+                        .frame(width: 380)
+                }
                 HStack(alignment: .center) {
                     Text("Token:").frame(width: 120, alignment: .trailing)
                     VStack(alignment: .leading) {
