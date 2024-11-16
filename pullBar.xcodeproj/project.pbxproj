@@ -7,11 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7629FBD02A4F713300081779 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 7629FBCF2A4F713300081779 /* LaunchAtLogin */; };
 		768A4C5528AF253C004E557E /* BottomItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 768A4C5428AF253C004E557E /* BottomItemView.swift */; };
+		7695CC3E2C99F717004EAB35 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 7695CC3D2C99F717004EAB35 /* LaunchAtLogin */; };
 		769F4E1B2765A2B900594911 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E1A2765A2B900594911 /* AboutView.swift */; };
 		769F4E7B277B97B300594911 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7A277B97B300594911 /* Notifications.swift */; };
 		769F4E7D277CAFAD00594911 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 769F4E7C277CAFAD00594911 /* StringExtensions.swift */; };
+		76C6AA5B2C98E809003472DA /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = 76C6AA5A2C98E809003472DA /* Defaults */; };
 		76D5F9E428D28958009EBD80 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 76D5F9E328D28958009EBD80 /* KeychainAccess */; };
 		76D5F9E628D28A29009EBD80 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76D5F9E528D28A29009EBD80 /* Keychain.swift */; };
 		76F7DAD028A88CAB0086A3B0 /* GithubTokenValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76F7DACF28A88CAB0086A3B0 /* GithubTokenValidator.swift */; };
@@ -22,7 +23,6 @@
 		8CECBBEA2742AAFB00A2802D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8CECBBE82742AAFB00A2802D /* Main.storyboard */; };
 		8CECBBF42742AB3F00A2802D /* GitHubClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CECBBF22742AB3F00A2802D /* GitHubClient.swift */; };
 		8CECBBF52742AB3F00A2802D /* GitHubDtos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CECBBF32742AB3F00A2802D /* GitHubDtos.swift */; };
-		8CECBBF82742ABDA00A2802D /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = 8CECBBF72742ABDA00A2802D /* Defaults */; };
 		8CECBBFB2742ABE600A2802D /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 8CECBBFA2742ABE600A2802D /* Alamofire */; };
 		8CECBBFE2742AC0800A2802D /* DefaultsExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CECBBFD2742AC0800A2802D /* DefaultsExtensions.swift */; };
 		8CECBC022742B3A000A2802D /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CECBC002742B3A000A2802D /* PreferencesView.swift */; };
@@ -55,9 +55,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8CECBBF82742ABDA00A2802D /* Defaults in Frameworks */,
+				76C6AA5B2C98E809003472DA /* Defaults in Frameworks */,
 				8CECBBFB2742ABE600A2802D /* Alamofire in Frameworks */,
-				7629FBD02A4F713300081779 /* LaunchAtLogin in Frameworks */,
+				7695CC3E2C99F717004EAB35 /* LaunchAtLogin in Frameworks */,
 				76D5F9E428D28958009EBD80 /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -65,11 +65,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		76C6AA592C98E809003472DA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		8CECBBD62742AAF800A2802D = {
 			isa = PBXGroup;
 			children = (
 				8CECBBE12742AAF800A2802D /* pullBar */,
 				8CECBBE02742AAF800A2802D /* Products */,
+				76C6AA592C98E809003472DA /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -139,7 +147,7 @@
 				8CECBBDB2742AAF800A2802D /* Sources */,
 				8CECBBDC2742AAF800A2802D /* Frameworks */,
 				8CECBBDD2742AAF800A2802D /* Resources */,
-				7629FBD12A4F7AB700081779 /* Copy “Launch at Login Helper” */,
+				7695CC3F2C99F729004EAB35 /* Copy Launch at Login Helper */,
 			);
 			buildRules = (
 			);
@@ -147,10 +155,10 @@
 			);
 			name = pullBar;
 			packageProductDependencies = (
-				8CECBBF72742ABDA00A2802D /* Defaults */,
 				8CECBBFA2742ABE600A2802D /* Alamofire */,
 				76D5F9E328D28958009EBD80 /* KeychainAccess */,
-				7629FBCF2A4F713300081779 /* LaunchAtLogin */,
+				76C6AA5A2C98E809003472DA /* Defaults */,
+				7695CC3D2C99F717004EAB35 /* LaunchAtLogin */,
 			);
 			productName = pullBar;
 			productReference = 8CECBBDF2742AAF800A2802D /* pullBar.app */;
@@ -164,7 +172,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1300;
-				LastUpgradeCheck = 1410;
+				LastUpgradeCheck = 1530;
 				TargetAttributes = {
 					8CECBBDE2742AAF800A2802D = {
 						CreatedOnToolsVersion = 13.0;
@@ -184,7 +192,7 @@
 				8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */,
 				8CECBBF92742ABE600A2802D /* XCRemoteSwiftPackageReference "Alamofire" */,
 				76D5F9E228D28958009EBD80 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
-				7629FBCE2A4F713300081779 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */,
+				7695CC3C2C99F717004EAB35 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Legacy" */,
 			);
 			productRefGroup = 8CECBBE02742AAF800A2802D /* Products */;
 			projectDirPath = "";
@@ -208,7 +216,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		7629FBD12A4F7AB700081779 /* Copy “Launch at Login Helper” */ = {
+		7695CC3F2C99F729004EAB35 /* Copy Launch at Login Helper */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -218,7 +226,7 @@
 			);
 			inputPaths = (
 			);
-			name = "Copy “Launch at Login Helper”";
+			name = "Copy Launch at Login Helper";
 			outputFileListPaths = (
 			);
 			outputPaths = (
@@ -303,6 +311,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -365,6 +374,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -392,10 +402,11 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 14gh;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -405,7 +416,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.9;
+				MARKETING_VERSION = 1.10;
 				PRODUCT_BUNDLE_IDENTIFIER = debug.com.pavelmakhov.pullBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -420,12 +431,14 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = pullBar/pullBar.entitlements;
 				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 14gh;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = UV3HUS49VJ;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -435,7 +448,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.9;
+				MARKETING_VERSION = 1.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pavelmakhov.pullBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -467,9 +480,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		7629FBCE2A4F713300081779 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */ = {
+		7695CC3C2C99F717004EAB35 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Legacy" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin";
+			repositoryURL = "https://github.com/sindresorhus/LaunchAtLogin-Legacy";
 			requirement = {
 				branch = main;
 				kind = branch;
@@ -502,20 +515,20 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		7629FBCF2A4F713300081779 /* LaunchAtLogin */ = {
+		7695CC3D2C99F717004EAB35 /* LaunchAtLogin */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 7629FBCE2A4F713300081779 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */;
+			package = 7695CC3C2C99F717004EAB35 /* XCRemoteSwiftPackageReference "LaunchAtLogin-Legacy" */;
 			productName = LaunchAtLogin;
+		};
+		76C6AA5A2C98E809003472DA /* Defaults */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */;
+			productName = Defaults;
 		};
 		76D5F9E328D28958009EBD80 /* KeychainAccess */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 76D5F9E228D28958009EBD80 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
 			productName = KeychainAccess;
-		};
-		8CECBBF72742ABDA00A2802D /* Defaults */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8CECBBF62742ABDA00A2802D /* XCRemoteSwiftPackageReference "Defaults" */;
-			productName = Defaults;
 		};
 		8CECBBFA2742ABE600A2802D /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;
