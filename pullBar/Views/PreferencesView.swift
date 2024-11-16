@@ -29,8 +29,6 @@ struct PreferencesView: View {
     @Default(.counterType) var counterType
 
     @State private var showGhAlert = false
-    
-    @State private var selectedTab: Int = 1
 
     @StateObject private var githubTokenValidator = GithubTokenValidator()
     @ObservedObject private var launchAtLogin = LaunchAtLogin.observable
@@ -39,7 +37,7 @@ struct PreferencesView: View {
 
     var body: some View {
 
-        TabView (selection: $selectedTab) {
+        TabView {
             Form {
                 HStack(alignment: .center) {
                     Text("Pull Requests:").frame(width: 120, alignment: .trailing)
@@ -49,7 +47,7 @@ struct PreferencesView: View {
                         Toggle("review requested", isOn: $showRequested)
                     }
                 }
-
+                
                 HStack(alignment: .center) {
                     Text("Build Information:").frame(width: 120, alignment: .trailing)
                     Picker("", selection: $builtType, content: {
@@ -61,17 +59,17 @@ struct PreferencesView: View {
                     .pickerStyle(RadioGroupPickerStyle())
                     .frame(width: 120)
                 }
-
+                
                 HStack(alignment: .center) {
                     Text("Show Avatar:").frame(width: 120, alignment: .trailing)
                     Toggle("", isOn: $showAvatar)
                 }
-
+                
                 HStack(alignment: .center) {
                     Text("Show Labels:").frame(width: 120, alignment: .trailing)
                     Toggle("", isOn: $showLabels)
                 }
-
+                
                 HStack(alignment: .center) {
                     Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
                     Picker("", selection: $refreshRate, content: {
@@ -84,13 +82,12 @@ struct PreferencesView: View {
                         .pickerStyle(MenuPickerStyle())
                         .frame(width: 100)
                 }
-
+                
                 HStack(alignment: .center) {
                     Text("Launch at login:").frame(width: 120, alignment: .trailing)
                     Toggle("", isOn: $launchAtLogin.isEnabled)
-
                 }
-
+                
             }
             .padding(8)
             .frame(maxWidth: .infinity)
@@ -149,7 +146,6 @@ struct PreferencesView: View {
                 githubTokenValidator.validate()
             }
             .tabItem{Text("Authentication")}
-            .tag(1)
 
             Form {
                 HStack(alignment: .center) {
@@ -191,6 +187,7 @@ struct PreferencesView: View {
                 .tabItem{Text("Advanced")}
 
         }
+        .frame(width: 600)
         .padding()
 
     }

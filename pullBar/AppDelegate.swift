@@ -13,19 +13,7 @@ import KeychainAccess
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
-    
-    @Default(.showAssigned) var showAssigned
-    @Default(.showCreated) var showCreated
-    @Default(.showRequested) var showRequested
-    
-    @Default(.showAvatar) var showAvatar
-    @Default(.showLabels) var showLabels
-    
-    @Default(.refreshRate) var refreshRate
-    @Default(.buildType) var buildType
-    @Default(.counterType) var counterType
-    
-    @Default(.githubUsername) var githubUsername
+
     @FromKeychain(.githubToken) var githubToken
     
     let ghClient = GitHubClient()
@@ -51,7 +39,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarItem.menu = menu
         
         timer = Timer.scheduledTimer(
-            timeInterval: Double(refreshRate * 60),
+            timeInterval: Double(Defaults[.refreshRate] * 60),
             target: self,
             selector: #selector(refreshMenu),
             userInfo: nil,
@@ -86,7 +74,7 @@ extension AppDelegate {
         NSLog("Refreshing menu")
         self.menu.removeAllItems()
 
-        if (githubUsername == "" || githubToken == "") {
+        if (Defaults[.githubUsername] == "" || githubToken == "") {
             addMenuFooterItems()
             return
         }
@@ -99,7 +87,7 @@ extension AppDelegate {
 
         let group = DispatchGroup()
         
-        if showAssigned {
+        if Defaults[.showAssigned] {
             group.enter()
             ghClient.getAssignedPulls() { pulls in
                 assignedPulls?.append(contentsOf: pulls)
@@ -107,7 +95,7 @@ extension AppDelegate {
             }
         }
 
-        if showCreated {
+        if Defaults[.showCreated] {
             group.enter()
             ghClient.getCreatedPulls() { pulls in
                 createdPulls?.append(contentsOf: pulls)
@@ -115,7 +103,7 @@ extension AppDelegate {
             }
         }
 
-        if showRequested {
+        if Defaults[.showRequested] {
             group.enter()
             ghClient.getReviewRequestedPulls() { pulls in
                 reviewRequestedPulls?.append(contentsOf: pulls)
@@ -128,8 +116,8 @@ extension AppDelegate {
             if let assignedPulls = assignedPulls, let createdPulls = createdPulls, let reviewRequestedPulls = reviewRequestedPulls {
                 self.statusBarItem.button?.title = ""
 
-                if self.showAssigned && !assignedPulls.isEmpty {
-                    if self.counterType == .assigned {
+                if Defaults[.showAssigned] && !assignedPulls.isEmpty {
+                    if Defaults[.counterType] == .assigned {
                         self.statusBarItem.button?.title = String(assignedPulls.count)
                     }
 
@@ -140,8 +128,8 @@ extension AppDelegate {
                     self.menu.addItem(.separator())
                 }
                 
-                if self.showCreated && !createdPulls.isEmpty {
-                    if self.counterType == .created {
+                if Defaults[.showCreated] && !createdPulls.isEmpty {
+                    if Defaults[.counterType] == .created {
                         self.statusBarItem.button?.title = String(createdPulls.count)
                     }
 
@@ -152,8 +140,8 @@ extension AppDelegate {
                     self.menu.addItem(.separator())
                 }
 
-                if self.showRequested && !reviewRequestedPulls.isEmpty {
-                    if self.counterType == .reviewRequested {
+                if Defaults[.showRequested] && !reviewRequestedPulls.isEmpty {
+                    if Defaults[.counterType] == .reviewRequested {
                         self.statusBarItem.button?.title = String(reviewRequestedPulls.count)
                     }
 
@@ -195,7 +183,7 @@ extension AppDelegate {
             .appendIcon(iconName: "person")
             .appendString(string: pull.node.author.login)
         
-        if !pull.node.labels.nodes.isEmpty && self.showLabels {
+        if !pull.node.labels.nodes.isEmpty && Defaults[.showLabels] {
             issueItemTitle
                 .appendNewLine()
                 .appendIcon(iconName: "tag", color: NSColor(.secondary))
@@ -208,7 +196,7 @@ extension AppDelegate {
         
         issueItemTitle.appendNewLine()
         
-        let approvedByMe = pull.node.reviews.edges.contains{ $0.node.author.login == githubUsername }
+        let approvedByMe = pull.node.reviews.edges.contains{ $0.node.author.login == Defaults[.githubUsername] }
         issueItemTitle
             .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor(named: "green")! : NSColor.secondaryLabelColor)
             .appendString(string: " " + String(pull.node.reviews.totalCount))
@@ -219,7 +207,7 @@ extension AppDelegate {
             .appendIcon(iconName: "calendar")
             .appendString(string: pull.node.createdAt.getElapsedInterval())
         
-        if showAvatar {
+        if Defaults[.showAvatar] {
             var image = NSImage()
             if let imageURL = pull.node.author.avatarUrl {
                 image = NSImage.imageFromUrl(fromURL: imageURL) ?? NSImage(named: "person")!
@@ -400,7 +388,7 @@ extension AppDelegate {
             if (windowTitle == "Preferences") {
                 timer?.invalidate()
                 timer = Timer.scheduledTimer(
-                    timeInterval: Double(refreshRate * 60),
+                    timeInterval: Double(Defaults[.refreshRate] * 60),
                     target: self,
                     selector: #selector(refreshMenu),
                     userInfo: nil,
