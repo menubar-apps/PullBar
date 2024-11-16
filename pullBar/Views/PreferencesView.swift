@@ -29,8 +29,6 @@ struct PreferencesView: View {
     @Default(.counterType) var counterType
 
     @State private var showGhAlert = false
-    
-    @State private var selectedTab: Int = 1
 
     @StateObject private var githubTokenValidator = GithubTokenValidator()
     @ObservedObject private var launchAtLogin = LaunchAtLogin.observable
@@ -39,7 +37,7 @@ struct PreferencesView: View {
 
     var body: some View {
 
-        TabView (selection: $selectedTab) {
+        TabView {
             Form {
                 HStack(alignment: .center) {
                     Text("Pull Requests:").frame(width: 120, alignment: .trailing)
@@ -88,14 +86,13 @@ struct PreferencesView: View {
                 HStack(alignment: .center) {
                     Text("Launch at login:").frame(width: 120, alignment: .trailing)
                     Toggle("", isOn: $launchAtLogin.isEnabled)
-
                 }
 
             }
             .padding(8)
             .frame(maxWidth: .infinity)
             .tabItem{Text("General")}
-            
+
             Form {
                 HStack(alignment: .center) {
                     Text("API Base URL:").frame(width: 120, alignment: .trailing)
@@ -149,7 +146,6 @@ struct PreferencesView: View {
                 githubTokenValidator.validate()
             }
             .tabItem{Text("Authentication")}
-            .tag(1)
 
             Form {
                 HStack(alignment: .center) {
@@ -191,6 +187,7 @@ struct PreferencesView: View {
                 .tabItem{Text("Advanced")}
 
         }
+        .frame(width: 600)
         .padding()
 
     }

@@ -12,16 +12,11 @@ import KeychainAccess
 
 public class GitHubClient {
     
-    @Default(.githubApiBaseUrl) var githubApiBaseUrl
-    @Default(.githubUsername) var githubUsername
-    @Default(.githubAdditionalQuery) var githubAdditionalQuery
     @FromKeychain(.githubToken) var githubToken
-
-    @Default(.buildType) var buildType
     
     func getAssignedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
         
-        if (githubUsername == "" || githubToken == "") {
+        if (Defaults[.githubUsername] == "" || githubToken == "") {
             completion([Edge]())
         }
         
@@ -30,14 +25,14 @@ public class GitHubClient {
             .accept("application/json")
         ]
         
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr assignee:\(githubUsername) archived:false \(githubAdditionalQuery)")
+        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr assignee:\(Defaults[.githubUsername]) archived:false \(Defaults[.githubAdditionalQuery])")
         
         let parameters = [
             "query": graphQlQuery,
             "variables":[]
         ] as [String: Any]
         
-        AF.request(githubApiBaseUrl + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+        AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
             .validate(statusCode: 200..<300)
             .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
                 switch response.result {
@@ -53,7 +48,7 @@ public class GitHubClient {
     
     func getCreatedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
         
-        if (githubUsername == "" || githubToken == "") {
+        if (Defaults[.githubUsername] == "" || githubToken == "") {
             completion([Edge]())
         }
         
@@ -61,14 +56,14 @@ public class GitHubClient {
             .authorization(bearerToken: githubToken),
             .accept("application/json")
         ]
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr author:\(githubUsername) archived:false \(githubAdditionalQuery)")
+        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr author:\(Defaults[.githubUsername]) archived:false \(Defaults[.githubAdditionalQuery])")
         
         let parameters = [
             "query": graphQlQuery,
             "variables":[]
         ] as [String: Any]
         
-        AF.request(githubApiBaseUrl + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+        AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
             .validate(statusCode: 200..<300)
             .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
                 switch response.result {
@@ -83,7 +78,7 @@ public class GitHubClient {
     }
     
     func getReviewRequestedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
-        if (githubUsername == "" || githubToken == "") {
+        if (Defaults[.githubUsername] == "" || githubToken == "") {
             completion([Edge]())
         }
         
@@ -91,14 +86,14 @@ public class GitHubClient {
             .authorization(bearerToken: githubToken),
             .accept("application/json")
         ]
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr review-requested:\(githubUsername) archived:false \(githubAdditionalQuery)")
+        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr review-requested:\(Defaults[.githubUsername]) archived:false \(Defaults[.githubAdditionalQuery])")
         
         let parameters = [
             "query": graphQlQuery,
             "variables":[]
         ] as [String: Any]
         
-        AF.request(githubApiBaseUrl + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+        AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
             .validate(statusCode: 200..<300)
             .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
                 switch response.result {
@@ -115,7 +110,7 @@ public class GitHubClient {
         
         var build = ""
         
-        switch buildType {
+        switch Defaults[.buildType] {
         case .checks:
             build = """
         commits(last: 1) {
@@ -233,7 +228,7 @@ public class GitHubClient {
             .accept("application/json")
         ]
         
-        AF.request(githubApiBaseUrl + "/user",
+        AF.request(Defaults[.githubApiBaseUrl] + "/user",
                    method: .get,
                    headers: headers)
         .validate(statusCode: 200..<300)
@@ -251,7 +246,7 @@ public class GitHubClient {
     
     func getLatestRelease(completion:@escaping (((LatestRelease?) -> Void))) -> Void {
         let headers: HTTPHeaders = [
-            .authorization(username: githubUsername, password: githubToken),
+            .authorization(username: Defaults[.githubUsername], password: githubToken),
             .contentType("application/json"),
             .accept("application/json")
         ]
