@@ -318,7 +318,7 @@ extension AppDelegate {
         self.menu.addItem(.separator())
         self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: "")
         // Remove for app store release
-        self.menu.addItem(withTitle: "Check for updates...", action: #selector(self.checkForUpdates), keyEquivalent: "")
+//        self.menu.addItem(withTitle: "Check for updates...", action: #selector(self.checkForUpdates), keyEquivalent: "")
         self.menu.addItem(withTitle: "About PullBar", action: #selector(self.openAboutWindow), keyEquivalent: "")
         self.menu.addItem(withTitle: "Quit", action: #selector(self.quit), keyEquivalent: "")
     }
@@ -360,7 +360,7 @@ extension AppDelegate {
             aboutWindow.close()
         }
         aboutWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 240, height: 340),
+            contentRect: NSRect(x: 0, y: 0, width: 240, height: 500),
             styleMask: [.closable, .titled],
             backing: .buffered,
             defer: false

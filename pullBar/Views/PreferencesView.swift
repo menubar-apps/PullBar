@@ -31,7 +31,7 @@ struct PreferencesView: View {
     @State private var showGhAlert = false
 
     @StateObject private var githubTokenValidator = GithubTokenValidator()
-    @ObservedObject private var launchAtLogin = LaunchAtLogin.observable
+//    @ObservedObject private var launchAtLogin = LaunchAtLogin.observable
     
     @State private var isExpanded: Bool = false
 
@@ -85,7 +85,9 @@ struct PreferencesView: View {
 
                 HStack(alignment: .center) {
                     Text("Launch at login:").frame(width: 120, alignment: .trailing)
-                    Toggle("", isOn: $launchAtLogin.isEnabled)
+                    LaunchAtLogin.Toggle {
+                        Text("")
+                    }
                 }
 
             }
