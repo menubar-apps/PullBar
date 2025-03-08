@@ -36,7 +36,7 @@ struct AboutView: View {
                     Text("Bug Report")
                 }
             }
-            Divider()
+//            Divider()
             Button(action: {
                 openURL(URL(string: "https://www.buymeacoffee.com/streetturtle")!)
             }) {
@@ -47,7 +47,10 @@ struct AboutView: View {
                         .padding(.top, 2)
                     Text("Buy me a coffee")
                 }
-            }	
+            }
+            
+            Divider()
+            AppPromotionView()
         }.padding()
     }
 }

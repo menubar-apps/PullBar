@@ -1,5 +1,5 @@
 {
-  "originHash" : "de88b4e3acd0459cb33360c3cb3c9525e47d50d144b21866ea79c3fa7c6d021e",
+  "originHash" : "22c866ea327f6db938d479f8e16cd618a46a1ba6c0503558514381243c714979",
   "pins" : [
     {
       "identity" : "alamofire",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sindresorhus/Defaults",
       "state" : {
-        "branch" : "main",
-        "revision" : "5b30f01e46d25f7b59e37d6d96b2030d6c96ac87"
+        "revision" : "38925e3cfacf3fb89a81a35b1cd44fd5a5b7e0fa",
+        "version" : "8.2.0"
       }
     },
     {
@@ -29,12 +29,12 @@
       }
     },
     {
-      "identity" : "launchatlogin-legacy",
+      "identity" : "launchatlogin-modern",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/sindresorhus/LaunchAtLogin-Legacy",
+      "location" : "https://github.com/sindresorhus/LaunchAtLogin-Modern",
       "state" : {
-        "branch" : "main",
-        "revision" : "9a894d799269cb591037f9f9cb0961510d4dca81"
+        "revision" : "a04ec1c363be3627734f6dad757d82f5d4fa8fcc",
+        "version" : "1.1.0"
       }
     }
   ],
