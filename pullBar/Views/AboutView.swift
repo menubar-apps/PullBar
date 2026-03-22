@@ -37,17 +37,17 @@ struct AboutView: View {
                 }
             }
 //            Divider()
-            Button(action: {
-                openURL(URL(string: "https://www.buymeacoffee.com/streetturtle")!)
-            }) {
-                HStack {
-                    Image("bmc-logo-no-background")
-                        .resizable()
-                        .scaledToFit()
-                        .padding(.top, 2)
-                    Text("Buy me a coffee")
-                }
-            }
+//            Button(action: {
+//                openURL(URL(string: "https://www.buymeacoffee.com/streetturtle")!)
+//            }) {
+//                HStack {
+//                    Image("bmc-logo-no-background")
+//                        .resizable()
+//                        .scaledToFit()
+//                        .padding(.top, 2)
+//                    Text("Buy me a coffee")
+//                }
+//            }
             
             Divider()
             AppPromotionView()
