@@ -37,8 +37,51 @@ There are 3 ways of installing the application:
     ```
  - [Download](https://github.com/menubar-apps/PullBar/releases) from github releases
 
-Then [generate](https://github.com/settings/tokens/new?scopes=repo) a github access token (you'll need to have a **repo** scope selected) and paste it in the application preferences with your github username:
+Then authenticate GitHub CLI on your Mac:
 
+```shell
+gh auth login --web
+```
+
+PullBar uses your local `gh` login session to query PRs.
+
+## Authentication model (current)
+
+PullBar now uses your local GitHub CLI session (`gh auth`) instead of storing a GitHub PAT in app preferences.
+
+- Run `gh auth login --web` once.
+- Verify with `gh auth status`.
+- In PullBar preferences, set your GitHub username (or leave blank and PullBar will resolve it from `gh api /user`).
+
+## Local unsigned build + install (for this Mac only)
+
+If you only want to run PullBar locally, you can build without Apple development signing:
+
+```shell
+cd /Users/bkane/Git-LI-GH/PullBar
+
+xcodebuild \
+  -project pullBar.xcodeproj \
+  -scheme pullBar \
+  -configuration Debug \
+  -destination 'platform=macOS' \
+  -derivedDataPath build \
+  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_REQUIRED=NO \
+  CODE_SIGN_IDENTITY="" \
+  DEVELOPMENT_TEAM="" \
+  CODE_SIGN_ENTITLEMENTS="" \
+  clean build
+```
+
+Install and launch:
+
+```shell
+cp -R build/Build/Products/Debug/pullBar.app /Applications/pullBar.app
+open /Applications/pullBar.app
+```
+
+If macOS blocks first launch, right-click the app in Finder and choose **Open**.
 
 
 <p align="center">

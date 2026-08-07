@@ -7,107 +7,28 @@
 
 import Foundation
 import Defaults
-import Alamofire
-import KeychainAccess
 
 public class GitHubClient {
-    
-    @FromKeychain(.githubToken) var githubToken
+    private let ghCommandQueue = DispatchQueue(label: "pullBar.GitHubClient.gh", qos: .userInitiated)
+    private let ghExecutables = [
+        "/opt/homebrew/bin/gh",
+        "/usr/local/bin/gh",
+        "/usr/bin/gh"
+    ]
     
     func getAssignedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
-        
-        if (Defaults[.githubUsername] == "" || githubToken == "") {
-            completion([Edge]())
-        }
-        
-        let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
-            .accept("application/json")
-        ]
-        
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr assignee:\(Defaults[.githubUsername]) archived:false \(Defaults[.githubAdditionalQuery])")
-        
-        let parameters = [
-            "query": graphQlQuery,
-            "variables":[]
-        ] as [String: Any]
-        
-        AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
-            .validate(statusCode: 200..<300)
-            .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
-                switch response.result {
-                case .success(let prs):
-                    completion(prs.data.search.edges)
-                case .failure(let error):
-                    sendNotification(body: error.localizedDescription)
-                    completion([Edge]())
-                    print(error)
-                }
-            }
+        fetchPulls(by: "assignee", completion: completion)
     }
     
     func getCreatedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
-        
-        if (Defaults[.githubUsername] == "" || githubToken == "") {
-            completion([Edge]())
-        }
-        
-        let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
-            .accept("application/json")
-        ]
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr author:\(Defaults[.githubUsername]) archived:false \(Defaults[.githubAdditionalQuery])")
-        
-        let parameters = [
-            "query": graphQlQuery,
-            "variables":[]
-        ] as [String: Any]
-        
-        AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
-            .validate(statusCode: 200..<300)
-            .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
-                switch response.result {
-                case .success(let prs):
-                    completion(prs.data.search.edges)
-                case .failure(let error):
-                    sendNotification(body: error.localizedDescription)
-                    print(error)
-                    completion([Edge]())
-                }
-            }
+        fetchPulls(by: "author", completion: completion)
     }
     
     func getReviewRequestedPulls(completion:@escaping (([Edge]) -> Void)) -> Void {
-        if (Defaults[.githubUsername] == "" || githubToken == "") {
-            completion([Edge]())
-        }
-        
-        let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
-            .accept("application/json")
-        ]
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr review-requested:\(Defaults[.githubUsername]) archived:false \(Defaults[.githubAdditionalQuery])")
-        
-        let parameters = [
-            "query": graphQlQuery,
-            "variables":[]
-        ] as [String: Any]
-        
-        AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
-            .validate(statusCode: 200..<300)
-            .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
-                switch response.result {
-                case .success(let prs):
-                    completion(prs.data.search.edges)
-                case .failure(let error):
-                    sendNotification(body: error.localizedDescription)
-                    completion([Edge]())
-                }
-            }
+        fetchPulls(by: "review-requested", completion: completion)
     }
     
     private func buildGraphQlQuery(queryString: String) -> String {
-        
         var build = ""
         
         switch Defaults[.buildType] {
@@ -168,8 +89,6 @@ public class GitHubClient {
             build = ""
         }
         
-        
-        
         return """
         {
             search(query: "\(queryString)", type: ISSUE, first: 30) {
@@ -216,58 +135,125 @@ public class GitHubClient {
                 }
             }
         }
-        
-        
         """
     }
     
     func getUser(completion: @escaping (User?) -> Void) {
-        let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
-            .contentType("application/json"),
-            .accept("application/json")
-        ]
-        
-        AF.request(Defaults[.githubApiBaseUrl] + "/user",
-                   method: .get,
-                   headers: headers)
-        .validate(statusCode: 200..<300)
-        .cacheResponse(using: ResponseCacher(behavior: .doNotCache))
-        .responseDecodable(of: User.self) { response in
-            switch response.result {
-            case .success(let repo):
-                completion(repo)
-            case .failure(let error):
-                completion(nil)
-                print(error)
+        ghCommandQueue.async {
+            do {
+                let output = try self.runGhCommand(arguments: ["api", "/user"])
+                let user = try JSONDecoder().decode(User.self, from: output)
+                DispatchQueue.main.async {
+                    completion(user)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
             }
         }
     }
     
     func getLatestRelease(completion:@escaping (((LatestRelease?) -> Void))) -> Void {
-        let headers: HTTPHeaders = [
-            .authorization(username: Defaults[.githubUsername], password: githubToken),
-            .contentType("application/json"),
-            .accept("application/json")
-        ]
-        AF.request("https://api.github.com/repos/menubar-apps/PullBar/releases/latest",
-                   method: .get,
-                   encoding: JSONEncoding.default,
-                   headers: headers)
-            .validate(statusCode: 200..<300)
-            .responseDecodable(of: LatestRelease.self) { response in
-                switch response.result {
-                case .success(let latestRelease):
-                    completion(latestRelease)
-                case .failure(let error):
+        ghCommandQueue.async {
+            do {
+                let output = try self.runGhCommand(arguments: ["api", "/repos/menubar-apps/PullBar/releases/latest"])
+                let release = try JSONDecoder().decode(LatestRelease.self, from: output)
+                DispatchQueue.main.async {
+                    completion(release)
+                }
+            } catch {
+                DispatchQueue.main.async {
                     completion(nil)
-                    if let data = response.data {
-                        let json = String(data: data, encoding: String.Encoding.utf8)
-//                            print("Failure Response: \(json)")
-                    }
-                    sendNotification(body: error.localizedDescription)
                 }
             }
+        }
+    }
+    
+    private func fetchPulls(by queryQualifier: String, completion: @escaping (([Edge]) -> Void)) {
+        ghCommandQueue.async {
+            do {
+                let username = try self.resolveUsername()
+                let query = "is:open is:pr \(queryQualifier):\(username) archived:false \(Defaults[.githubAdditionalQuery])"
+                let graphQlQuery = self.buildGraphQlQuery(queryString: query)
+                let output = try self.runGhCommand(arguments: ["api", "graphql", "-f", "query=\(graphQlQuery)"])
+                let pulls = try GithubDecoder().decode(GraphQlSearchResp.self, from: output)
+                DispatchQueue.main.async {
+                    completion(pulls.data.search.edges)
+                }
+            } catch {
+                sendNotification(body: error.localizedDescription)
+                DispatchQueue.main.async {
+                    completion([])
+                }
+            }
+        }
+    }
+    
+    private func resolveUsername() throws -> String {
+        let configured = Defaults[.githubUsername].trimmingCharacters(in: .whitespacesAndNewlines)
+        if !configured.isEmpty {
+            return configured
+        }
+        
+        let output = try runGhCommand(arguments: ["api", "/user", "--jq", ".login"])
+        guard let login = String(data: output, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !login.isEmpty else {
+            throw GhCliError.invalidOutput
+        }
+        
+        Defaults[.githubUsername] = login
+        return login
+    }
+    
+    private func runGhCommand(arguments: [String]) throws -> Foundation.Data {
+        let process = Process()
+        process.executableURL = try findGhExecutable()
+        process.arguments = arguments
+        
+        let stdout = Pipe()
+        let stderr = Pipe()
+        process.standardOutput = stdout
+        process.standardError = stderr
+        
+        try process.run()
+        process.waitUntilExit()
+        
+        let output: Foundation.Data = stdout.fileHandleForReading.readDataToEndOfFile()
+        let errorData: Foundation.Data = stderr.fileHandleForReading.readDataToEndOfFile()
+        
+        guard process.terminationStatus == 0 else {
+            let errorMessage = String(data: errorData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw GhCliError.commandFailed(message: errorMessage ?? "gh command failed with status \(process.terminationStatus)")
+        }
+        
+        return output
+    }
+    
+    private func findGhExecutable() throws -> URL {
+        let fileManager = FileManager.default
+        for path in ghExecutables where fileManager.isExecutableFile(atPath: path) {
+            return URL(fileURLWithPath: path)
+        }
+        
+        throw GhCliError.missingCli
+    }
+}
+
+enum GhCliError: LocalizedError {
+    case missingCli
+    case invalidOutput
+    case commandFailed(message: String)
+    
+    var errorDescription: String? {
+        switch self {
+        case .missingCli:
+            return "GitHub CLI was not found. Install gh and run `gh auth login`."
+        case .invalidOutput:
+            return "GitHub CLI returned an unexpected response."
+        case .commandFailed(let message):
+            return message
+        }
     }
 }
 

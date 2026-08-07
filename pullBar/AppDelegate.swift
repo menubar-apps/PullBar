@@ -9,12 +9,9 @@ import Cocoa
 import Defaults
 import SwiftUI
 import Foundation
-import KeychainAccess
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
-
-    @FromKeychain(.githubToken) var githubToken
     
     let ghClient = GitHubClient()
     var statusBarItem: NSStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -73,11 +70,6 @@ extension AppDelegate {
     func refreshMenu() {
         NSLog("Refreshing menu")
         self.menu.removeAllItems()
-
-        if (Defaults[.githubUsername] == "" || githubToken == "") {
-            addMenuFooterItems()
-            return
-        }
 
 
         var assignedPulls: [Edge]? = []
