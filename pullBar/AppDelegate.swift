@@ -102,6 +102,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Defaults[.counterSelection] = counterTemplate?.seedId ?? SearchCategory.counterNone
     }
 
+    @objc
+    func copyLink(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+    }
+
 }
 
 extension AppDelegate {
@@ -151,14 +159,14 @@ extension AppDelegate {
                     let parent = NSMenuItem(title: headerTitle, action: nil, keyEquivalent: "")
                     let submenu = NSMenu()
                     for pull in pulls {
-                        submenu.addItem(self.createMenuItem(pull: pull))
+                        self.addMenuItems(pull: pull, to: submenu)
                     }
                     parent.submenu = submenu
                     self.menu.addItem(parent)
                 } else {
                     self.menu.addItem(NSMenuItem(title: headerTitle, action: nil, keyEquivalent: ""))
                     for pull in pulls {
-                        self.menu.addItem(self.createMenuItem(pull: pull))
+                        self.addMenuItems(pull: pull, to: self.menu)
                     }
                 }
 
@@ -178,6 +186,22 @@ extension AppDelegate {
 
             self.addMenuFooterItems()
         }
+    }
+
+    func addMenuItems(pull: Edge, to menu: NSMenu) {
+        menu.addItem(createMenuItem(pull: pull))
+
+        let copyItem = NSMenuItem(
+            title: "Copy URL — \(pull.node.title.trunc(length: 50)) #\(pull.node.number)",
+            action: #selector(copyLink),
+            keyEquivalent: ""
+        )
+        copyItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: "Copy URL")
+        copyItem.isAlternate = true
+        copyItem.keyEquivalentModifierMask = [.option]
+        copyItem.representedObject = pull.node.url
+        copyItem.toolTip = pull.node.url.absoluteString
+        menu.addItem(copyItem)
     }
     
     func createMenuItem(pull: Edge) -> NSMenuItem {
