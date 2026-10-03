@@ -189,13 +189,17 @@ extension AppDelegate {
     }
 
     func addMenuItems(pull: Edge, to menu: NSMenu) {
-        menu.addItem(createMenuItem(pull: pull))
+        let issueItem = createMenuItem(pull: pull)
+        menu.addItem(issueItem)
 
-        let copyItem = NSMenuItem(
-            title: "Copy URL — \(pull.node.title.trunc(length: 50)) #\(pull.node.number)",
-            action: #selector(copyLink),
-            keyEquivalent: ""
-        )
+        // Reuse the pull request's multi-line title so the row keeps its height
+        // when Option swaps in the copy item.
+        let copyTitle = NSMutableAttributedString(string: "")
+            .appendString(string: "Copy URL — ", color: .controlAccentColor)
+        copyTitle.append(issueItem.attributedTitle ?? NSAttributedString(string: issueItem.title))
+
+        let copyItem = NSMenuItem(title: "", action: #selector(copyLink), keyEquivalent: "")
+        copyItem.attributedTitle = copyTitle
         copyItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: "Copy URL")
         copyItem.isAlternate = true
         copyItem.keyEquivalentModifierMask = [.option]
