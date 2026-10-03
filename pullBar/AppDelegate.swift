@@ -80,24 +80,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .contains { userDefaults.object(forKey: $0) != nil }
         guard hasLegacySettings else { return }
 
-        // Seed the categories list from the legacy toggles, preserving order.
-        var seeded: [SearchCategory] = []
-        if Defaults[.showAssigned] { seeded.append(BuiltinTemplate.assigned.makeCategory(id: "seed-assigned")) }
-        if Defaults[.showCreated] { seeded.append(BuiltinTemplate.created.makeCategory(id: "seed-created")) }
-        if Defaults[.showRequested] { seeded.append(BuiltinTemplate.reviewRequested.makeCategory(id: "seed-review-requested")) }
-        Defaults[.categories] = seeded
-
-        // Map the legacy counter choice onto the new counter selection.
+        let counterTemplate: BuiltinTemplate?
         switch Defaults[.legacyCounterType] {
-        case "none":
-            Defaults[.counterSelection] = SearchCategory.counterNone
-        case "assigned":
-            Defaults[.counterSelection] = seeded.first(where: { $0.id == "seed-assigned" })?.id ?? SearchCategory.counterMyTeam
-        case "created":
-            Defaults[.counterSelection] = seeded.first(where: { $0.id == "seed-created" })?.id ?? SearchCategory.counterMyTeam
-        default: // "reviewRequested"
-            Defaults[.counterSelection] = SearchCategory.counterMyTeam
+        case "none": counterTemplate = nil
+        case "assigned": counterTemplate = .assigned
+        case "created": counterTemplate = .created
+        default: counterTemplate = .reviewRequested
         }
+
+        // Seed the categories list from the legacy toggles, preserving order. A
+        // counter that pointed at a hidden section adds that section, since the
+        // counter can only show a category's count.
+        let enabled: [BuiltinTemplate: Bool] = [
+            .assigned: Defaults[.showAssigned],
+            .created: Defaults[.showCreated],
+            .reviewRequested: Defaults[.showRequested],
+        ]
+        let seeded = [BuiltinTemplate.assigned, .created, .reviewRequested]
+            .filter { enabled[$0] == true || $0 == counterTemplate }
+        Defaults[.categories] = seeded.map { $0.makeSeedCategory() }
+        Defaults[.counterSelection] = counterTemplate?.seedId ?? SearchCategory.counterNone
     }
 
 }
@@ -121,7 +123,6 @@ extension AppDelegate {
         let counter = Defaults[.counterSelection]
 
         var pullsByCategory: [String: [Edge]] = [:]
-        var myTeamCount: Int? = nil
 
         let group = DispatchGroup()
 
@@ -133,22 +134,9 @@ extension AppDelegate {
             }
         }
 
-        // "My team" is a counter-only builtin, fetched independently of the list.
-        if counter == SearchCategory.counterMyTeam {
-            group.enter()
-            let filter = SearchCategory.myTeamFilter.replacingOccurrences(of: SearchCategory.usernamePlaceholder, with: username)
-            ghClient.getPulls(filter: filter) { pulls in
-                myTeamCount = pulls.count
-                group.leave()
-            }
-        }
-
         group.notify(queue: .main) {
-            // Clear again right before rebuilding: the initial removeAllItems()
-            // runs synchronously at the start of refreshMenu(), but building
-            // happens here asynchronously. If two refreshes overlap, clearing
-            // here ensures the last completion produces a single menu rather
-            // than appending a duplicate set of items.
+            // An empty NSMenu will not open, so hold the previous items until
+            // the new ones are ready to replace them.
             self.menu.removeAllItems()
             self.statusBarItem.button?.title = ""
 
@@ -157,7 +145,7 @@ extension AppDelegate {
 
             for (index, category) in visibleCategories.enumerated() {
                 let pulls = pullsByCategory[category.id] ?? []
-                let headerTitle = "\(category.name) (\(pulls.count))"
+                let headerTitle = "\(category.displayName) (\(pulls.count))"
 
                 if category.asSubmenu {
                     let parent = NSMenuItem(title: headerTitle, action: nil, keyEquivalent: "")
@@ -183,14 +171,7 @@ extension AppDelegate {
                 }
             }
 
-            let counterCount: Int
-            if counter == SearchCategory.counterMyTeam {
-                counterCount = myTeamCount ?? 0
-            } else if counter != SearchCategory.counterNone {
-                counterCount = (pullsByCategory[counter] ?? []).count
-            } else {
-                counterCount = 0
-            }
+            let counterCount = (pullsByCategory[counter] ?? []).count
             if counterCount > 0 {
                 self.statusBarItem.button?.title = String(counterCount)
             }

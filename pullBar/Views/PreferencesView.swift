@@ -140,34 +140,6 @@ struct PreferencesView: View {
             .tabItem{Text("Authentication")}
 
             Form {
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading) {
-                        Text("Counter:")
-                        Text("Number of pull requests next to the icon")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    Picker("", selection: $counterSelection, content: {
-                        Section {
-                            Text("None").tag(SearchCategory.counterNone)
-                            Text("My team").tag(SearchCategory.counterMyTeam)
-                        }
-                        Section {
-                            ForEach(categories) { category in
-                                Text(category.name.isEmpty ? "(unnamed)" : category.name).tag(category.id)
-                            }
-                        }
-                    })
-                    .labelsHidden()
-                    .pickerStyle(MenuPickerStyle())
-                    .frame(width: 200)
-                }
-            }
-            .padding(8)
-            .frame(maxWidth: .infinity)
-            .tabItem{Text("Menubar icon")}
-
-            Form {
                 HStack(alignment: .top) {
                     Text("Additional Query:").frame(width: 120, alignment: .trailing)
                     TextField("", text: $githubAdditionalQuery)
@@ -196,7 +168,7 @@ struct PreferencesView: View {
     /// builtin templates or a blank custom category.
     private var categoriesTab: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Categories appear in the menu in this order. Drag to reorder.")
+            Text("Categories appear in the menu in this order. Drag to reorder. Tick Menubar to show a category's count next to the icon.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
@@ -206,6 +178,7 @@ struct PreferencesView: View {
                     Text("Category name").frame(width: 150, alignment: .leading)
                     Text("Search query").frame(maxWidth: .infinity, alignment: .leading)
                     Text("Show in").frame(width: 120, alignment: .leading)
+                    Text("Menubar").frame(width: 60, alignment: .center)
                     Color.clear.frame(width: 24, height: 1)
                 }
                 .font(.caption)
@@ -220,7 +193,7 @@ struct PreferencesView: View {
                         TextField("name", text: $category.name)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 150)
-                        TextField("filter, e.g. review-requested:@me", text: $category.filter)
+                        TextField("filter, e.g. review-requested:\(SearchCategory.usernamePlaceholder)", text: $category.filter)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(maxWidth: .infinity)
                         Picker("", selection: $category.asSubmenu) {
@@ -231,7 +204,17 @@ struct PreferencesView: View {
                         .pickerStyle(MenuPickerStyle())
                         .frame(width: 120)
                         .help("Where this category's pull requests appear in the menu")
+                        Toggle("", isOn: Binding(
+                            get: { counterSelection == category.id },
+                            set: { counterSelection = $0 ? category.id : SearchCategory.counterNone }
+                        ))
+                        .labelsHidden()
+                        .frame(width: 60)
+                        .help("Show this category's count next to the menubar icon")
                         Button {
+                            if counterSelection == category.id {
+                                counterSelection = SearchCategory.counterNone
+                            }
                             categories.removeAll { $0.id == category.id }
                         } label: {
                             Image(systemName: "trash")
@@ -244,9 +227,6 @@ struct PreferencesView: View {
                 }
                 .onMove { indices, newOffset in
                     categories.move(fromOffsets: indices, toOffset: newOffset)
-                }
-                .onDelete { offsets in
-                    categories.remove(atOffsets: offsets)
                 }
             }
             .frame(height: 260)

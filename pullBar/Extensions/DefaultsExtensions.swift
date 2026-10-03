@@ -31,9 +31,9 @@ extension Defaults.Keys {
 
     static let refreshRate = Key<Int>("refreshRate", default: 5)
     static let buildType = Key<BuildType>("buildType", default: .none)
-    // Which count is shown next to the menubar icon. Either a special token
-    // (`counterNone` / `counterMyTeam`) or the id of a category.
-    static let counterSelection = Key<String>("counterSelection", default: SearchCategory.counterMyTeam)
+    // Which count is shown next to the menubar icon: the id of a category, or
+    // `counterNone`.
+    static let counterSelection = Key<String>("counterSelection", default: BuiltinTemplate.reviewRequested.seedId)
 }
 
 extension KeychainKeys {
@@ -83,22 +83,21 @@ struct SearchCategory: Codable, Defaults.Serializable, Identifiable, Hashable {
         filter.replacingOccurrences(of: SearchCategory.usernamePlaceholder, with: username)
     }
 
+    var displayName: String {
+        name.isEmpty ? "(unnamed)" : name
+    }
+
     // MARK: - Counter selection tokens
 
     /// No count shown next to the menubar icon.
     static let counterNone = ""
-    /// Count of team review requests, independent of the categories list.
-    static let counterMyTeam = "__my_team__"
-    /// Filter backing the "My team" counter option.
-    static let myTeamFilter = "review-requested:\(usernamePlaceholder)"
 
     // MARK: - Defaults
 
-    /// The list a fresh install starts with: the original three builtin types.
+    /// The list a fresh install starts with, matching the previous default of
+    /// showing only review requests.
     static let defaultCategories: [SearchCategory] = [
-        BuiltinTemplate.assigned.makeCategory(id: "seed-assigned"),
-        BuiltinTemplate.created.makeCategory(id: "seed-created"),
-        BuiltinTemplate.reviewRequested.makeCategory(id: "seed-review-requested"),
+        BuiltinTemplate.reviewRequested.makeSeedCategory(),
     ]
 }
 
@@ -130,8 +129,22 @@ enum BuiltinTemplate: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Stable id used for categories created by the defaults and the legacy migration.
+    var seedId: String {
+        switch self {
+        case .assigned: return "seed-assigned"
+        case .created: return "seed-created"
+        case .reviewRequested: return "seed-review-requested"
+        case .userReviewRequested: return "seed-user-review-requested"
+        }
+    }
+
     func makeCategory(id: String) -> SearchCategory {
         SearchCategory(id: id, name: name, filter: filter)
+    }
+
+    func makeSeedCategory() -> SearchCategory {
+        makeCategory(id: seedId)
     }
 }
 

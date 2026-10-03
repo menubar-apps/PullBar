@@ -29,11 +29,11 @@ public class GitHubClient {
             .accept("application/json")
         ]
 
-        let graphQlQuery = buildGraphQlQuery(queryString: "is:open is:pr \(filter) archived:false \(Defaults[.githubAdditionalQuery])")
+        let searchQuery = "is:open is:pr \(filter) archived:false \(Defaults[.githubAdditionalQuery])"
 
         let parameters = [
-            "query": graphQlQuery,
-            "variables":[]
+            "query": buildGraphQlQuery(),
+            "variables": ["searchQuery": searchQuery]
         ] as [String: Any]
 
         AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
@@ -50,7 +50,7 @@ public class GitHubClient {
             }
     }
 
-    private func buildGraphQlQuery(queryString: String) -> String {
+    private func buildGraphQlQuery() -> String {
         
         var build = ""
         
@@ -115,8 +115,8 @@ public class GitHubClient {
         
         
         return """
-        {
-            search(query: "\(queryString)", type: ISSUE, first: 30) {
+        query($searchQuery: String!) {
+            search(query: $searchQuery, type: ISSUE, first: 30) {
                 issueCount
                 edges {
                     node {
