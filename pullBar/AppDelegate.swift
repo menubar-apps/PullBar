@@ -192,20 +192,44 @@ extension AppDelegate {
         let issueItem = createMenuItem(pull: pull)
         menu.addItem(issueItem)
 
-        // Reuse the pull request's multi-line title so the row keeps its height
-        // when Option swaps in the copy item.
-        let copyTitle = NSMutableAttributedString(string: "")
-            .appendString(string: "Copy URL — ", color: .controlAccentColor)
-        copyTitle.append(issueItem.attributedTitle ?? NSAttributedString(string: issueItem.title))
+        // Option alternate: same row as the pull request, with the first line replaced by "Copy Link #123"
+        let copyTitle = NSMutableAttributedString(attributedString: issueItem.attributedTitle ?? NSAttributedString(string: issueItem.title))
+        let firstLineEnd = (copyTitle.string as NSString).range(of: "\n").location
+        let firstLine = NSMutableAttributedString(string: "")
+            .appendString(string: "Copy Link", color: NSColor(.primary))
+            .appendString(string: " #" + String(pull.node.number))
+            .appendSeparator()
+        copyTitle.replaceCharacters(in: NSRange(location: 0, length: firstLineEnd == NSNotFound ? copyTitle.length : firstLineEnd), with: firstLine)
 
         let copyItem = NSMenuItem(title: "", action: #selector(copyLink), keyEquivalent: "")
         copyItem.attributedTitle = copyTitle
-        copyItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: "Copy URL")
         copyItem.isAlternate = true
         copyItem.keyEquivalentModifierMask = [.option]
         copyItem.representedObject = pull.node.url
         copyItem.toolTip = pull.node.url.absoluteString
         menu.addItem(copyItem)
+
+        setAvatar(pull: pull, for: [issueItem, copyItem])
+    }
+
+    func setAvatar(pull: Edge, for items: [NSMenuItem]) {
+        guard Defaults[.showAvatar] else { return }
+
+        // Set default image initially
+        let defaultImage = NSImage(named: "person")!
+        let resizedDefaultImage = resizeImage(image: defaultImage, size: NSSize(width: 36.0, height: 36.0))
+        items.forEach { $0.image = resizedDefaultImage }
+
+        // Load avatar asynchronously if available
+        if let author = pull.node.author, let imageURL = author.avatarUrl {
+            NSImage.loadImageAsync(fromURL: imageURL) { loadedImage in
+                guard let loadedImage = loadedImage else { return }
+
+                loadedImage.cacheMode = NSImage.CacheMode.always
+                let resizedImage = self.resizeImage(image: loadedImage, size: NSSize(width: 36.0, height: 36.0))
+                items.forEach { $0.image = resizedImage }
+            }
+        }
     }
     
     func createMenuItem(pull: Edge) -> NSMenuItem {
@@ -256,25 +280,6 @@ extension AppDelegate {
             .appendSeparator()
             .appendIcon(iconName: "calendar")
             .appendString(string: pull.node.createdAt.getElapsedInterval())
-        
-        if Defaults[.showAvatar] {
-            // Set default image initially
-            let defaultImage = NSImage(named: "person")!
-            let resizedDefaultImage = resizeImage(image: defaultImage, size: NSSize(width: 36.0, height: 36.0))
-            issueItem.image = resizedDefaultImage
-            
-            // Load avatar asynchronously if available
-            if let author = pull.node.author, let imageURL = author.avatarUrl {
-                NSImage.loadImageAsync(fromURL: imageURL) { loadedImage in
-                    guard let loadedImage = loadedImage else { return }
-                    
-                    loadedImage.cacheMode = NSImage.CacheMode.always
-                    let resizedImage = self.resizeImage(image: loadedImage, size: NSSize(width: 36.0, height: 36.0))
-                    issueItem.image = resizedImage
-                }
-            }
-        }
-        
         
         if let commits = pull.node.commits {
             
