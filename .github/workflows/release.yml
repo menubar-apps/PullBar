@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+  build:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: macos-latest
+    env:
+      TAG: ${{ needs.release-please.outputs.tag_name }}
+      VERSION: ${{ needs.release-please.outputs.version }}
+      SIGNING_IDENTITY: Developer ID Application
+      TEAM_ID: UV3HUS49VJ
+      KEYCHAIN: ${{ runner.temp }}/signing.keychain-db
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Import signing certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          echo "$CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN"
+          rm "$RUNNER_TEMP/certificate.p12"
+
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project pullBar.xcodeproj \
+            -scheme pullBar \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -archivePath "$RUNNER_TEMP/pullBar.xcarchive" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
+            OTHER_CODE_SIGN_FLAGS="--timestamp --keychain $KEYCHAIN"
+
+      - name: Export app
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>developer-id</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>$SIGNING_IDENTITY</string>
+            <key>teamID</key>
+            <string>$TEAM_ID</string>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/pullBar.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Create DMG
+        run: |
+          DMG_ROOT="$RUNNER_TEMP/dmg"
+          mkdir -p "$DMG_ROOT"
+          cp -R "$RUNNER_TEMP/export/pullBar.app" "$DMG_ROOT/"
+          ln -s /Applications "$DMG_ROOT/Applications"
+          hdiutil create -volname pullBar -srcfolder "$DMG_ROOT" -ov -format UDZO "pullBar.$VERSION.dmg"
+          codesign --sign "$SIGNING_IDENTITY" --keychain "$KEYCHAIN" --timestamp "pullBar.$VERSION.dmg"
+
+      - name: Notarize DMG
+        env:
+          API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          echo "$API_KEY_P8" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          xcrun notarytool submit "pullBar.$VERSION.dmg" \
+            --key "$RUNNER_TEMP/AuthKey.p8" \
+            --key-id "$API_KEY_ID" \
+            --issuer "$API_ISSUER_ID" \
+            --wait
+          xcrun stapler staple "pullBar.$VERSION.dmg"
+          rm "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Upload DMG to draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "pullBar.$VERSION.dmg" --clobber
+
+      - name: Remove keychain
+        if: always()
+        run: security delete-keychain "$KEYCHAIN" || true

@@ -40,6 +40,7 @@
 		769F4E7C277CAFAD00594911 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
 		76D5F9E528D28A29009EBD80 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		76F7DACF28A88CAB0086A3B0 /* GithubTokenValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GithubTokenValidator.swift; sourceTree = "<group>"; };
+		7A0E5E1A2F00000100C0FFEE /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		8C55444A274AD7B20079CA42 /* DateExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateExtensions.swift; sourceTree = "<group>"; };
 		8C55444C274AD9E00079CA42 /* NSImageExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSImageExtensions.swift; sourceTree = "<group>"; };
 		8CECBBDF2742AAF800A2802D /* pullBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pullBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -103,6 +104,7 @@
 				8CECBBE62742AAFB00A2802D /* Assets.xcassets */,
 				8CECBBE82742AAFB00A2802D /* Main.storyboard */,
 				8CECBBEB2742AAFB00A2802D /* pullBar.entitlements */,
+				7A0E5E1A2F00000100C0FFEE /* Version.xcconfig */,
 				769F4E7A277B97B300594911 /* Notifications.swift */,
 				76D5F9E528D28A29009EBD80 /* Keychain.swift */,
 			);
@@ -379,6 +381,7 @@
 		};
 		8CECBBEF2742AAFB00A2802D /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7A0E5E1A2F00000100C0FFEE /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -402,7 +405,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13;
-				MARKETING_VERSION = 1.12;
 				PRODUCT_BUNDLE_IDENTIFIER = debug.com.pavelmakhov.pullBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -412,6 +414,7 @@
 		};
 		8CECBBF02742AAFB00A2802D /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7A0E5E1A2F00000100C0FFEE /* Version.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -435,7 +438,6 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13;
-				MARKETING_VERSION = 1.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.pavelmakhov.pullBar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

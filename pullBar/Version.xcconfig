@@ -1,0 +1,4 @@
+// The version is bumped automatically by release-please. Do not edit manually.
+// x-release-please-start-version
+MARKETING_VERSION = 1.13.0
+// x-release-please-end
