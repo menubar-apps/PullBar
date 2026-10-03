@@ -94,11 +94,8 @@ jobs:
 
       - name: Create DMG
         run: |
-          DMG_ROOT="$RUNNER_TEMP/dmg"
-          mkdir -p "$DMG_ROOT"
-          cp -R "$RUNNER_TEMP/export/pullBar.app" "$DMG_ROOT/"
-          ln -s /Applications "$DMG_ROOT/Applications"
-          hdiutil create -volname pullBar -srcfolder "$DMG_ROOT" -ov -format UDZO "pullBar.$VERSION.dmg"
+          npx --yes create-dmg@8.1.0 --no-code-sign --no-version-in-filename "$RUNNER_TEMP/export/pullBar.app" .
+          mv pullBar.dmg "pullBar.$VERSION.dmg"
           codesign --sign "$SIGNING_IDENTITY" --keychain "$KEYCHAIN" --timestamp "pullBar.$VERSION.dmg"
 
       - name: Notarize DMG
