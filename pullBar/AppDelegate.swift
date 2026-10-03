@@ -26,8 +26,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var timer: Timer? = nil
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        migrateCategoriesIfNeeded()
+
         NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.windowClosed), name: NSWindow.willCloseNotification, object: nil)
-        
+
         guard let statusButton = statusBarItem.button else { return }
         let icon = NSImage(named: "git-pull-request")
         let size = NSSize(width: 16, height: 16)
@@ -48,8 +50,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         timer?.fire()
         RunLoop.main.add(timer!, forMode: .common)
         NSApp.setActivationPolicy(.accessory)
-        
-        
+
+
         // Insert code here to initialize your application
     }
     
@@ -65,7 +67,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func openLink(_ sender: NSMenuItem) {
         NSWorkspace.shared.open(sender.representedObject as! URL)
     }
-    
+
+    /// One-time migration of the legacy per-type toggles and counter choice into
+    /// the user-managed `categories` list and `counterSelection`. Fresh installs
+    /// (no persisted legacy settings) keep the default categories instead.
+    func migrateCategoriesIfNeeded() {
+        guard Defaults[.categoriesSchemaVersion] < 1 else { return }
+        Defaults[.categoriesSchemaVersion] = 1
+
+        let userDefaults = UserDefaults.standard
+        let hasLegacySettings = ["showAssigned", "showCreated", "showRequested", "counterType"]
+            .contains { userDefaults.object(forKey: $0) != nil }
+        guard hasLegacySettings else { return }
+
+        // Seed the categories list from the legacy toggles, preserving order.
+        var seeded: [SearchCategory] = []
+        if Defaults[.showAssigned] { seeded.append(BuiltinTemplate.assigned.makeCategory(id: "seed-assigned")) }
+        if Defaults[.showCreated] { seeded.append(BuiltinTemplate.created.makeCategory(id: "seed-created")) }
+        if Defaults[.showRequested] { seeded.append(BuiltinTemplate.reviewRequested.makeCategory(id: "seed-review-requested")) }
+        Defaults[.categories] = seeded
+
+        // Map the legacy counter choice onto the new counter selection.
+        switch Defaults[.legacyCounterType] {
+        case "none":
+            Defaults[.counterSelection] = SearchCategory.counterNone
+        case "assigned":
+            Defaults[.counterSelection] = seeded.first(where: { $0.id == "seed-assigned" })?.id ?? SearchCategory.counterMyTeam
+        case "created":
+            Defaults[.counterSelection] = seeded.first(where: { $0.id == "seed-created" })?.id ?? SearchCategory.counterMyTeam
+        default: // "reviewRequested"
+            Defaults[.counterSelection] = SearchCategory.counterMyTeam
+        }
+    }
+
 }
 
 extension AppDelegate {
@@ -80,84 +114,88 @@ extension AppDelegate {
         }
 
 
-        var assignedPulls: [Edge]? = []
-        var createdPulls: [Edge]? = []
-        var reviewRequestedPulls: [Edge]? = []
+        let username = Defaults[.githubUsername]
+        let categories = Defaults[.categories].filter {
+            !$0.resolvedFilter(username: username).trimmingCharacters(in: .whitespaces).isEmpty
+        }
+        let counter = Defaults[.counterSelection]
 
+        var pullsByCategory: [String: [Edge]] = [:]
+        var myTeamCount: Int? = nil
 
         let group = DispatchGroup()
 
-        // The counter can point at a section that isn't displayed.
-        let counterType = Defaults[.counterType]
-        let needAssigned  = Defaults[.showAssigned]  || counterType == .assigned
-        let needCreated   = Defaults[.showCreated]   || counterType == .created
-        let needRequested = Defaults[.showRequested] || counterType == .reviewRequested
-
-        if needAssigned {
+        for category in categories {
             group.enter()
-            ghClient.getAssignedPulls() { pulls in
-                assignedPulls?.append(contentsOf: pulls)
+            ghClient.getPulls(filter: category.resolvedFilter(username: username)) { pulls in
+                pullsByCategory[category.id, default: []].append(contentsOf: pulls)
                 group.leave()
             }
         }
 
-        if needCreated {
+        // "My team" is a counter-only builtin, fetched independently of the list.
+        if counter == SearchCategory.counterMyTeam {
             group.enter()
-            ghClient.getCreatedPulls() { pulls in
-                createdPulls?.append(contentsOf: pulls)
-                group.leave()
-            }
-        }
-
-        if needRequested {
-            group.enter()
-            ghClient.getReviewRequestedPulls() { pulls in
-                reviewRequestedPulls?.append(contentsOf: pulls)
+            let filter = SearchCategory.myTeamFilter.replacingOccurrences(of: SearchCategory.usernamePlaceholder, with: username)
+            ghClient.getPulls(filter: filter) { pulls in
+                myTeamCount = pulls.count
                 group.leave()
             }
         }
 
         group.notify(queue: .main) {
-            
-            if let assignedPulls = assignedPulls, let createdPulls = createdPulls, let reviewRequestedPulls = reviewRequestedPulls {
-                // An empty NSMenu will not open, so hold the previous items until
-                // the new ones are ready to replace them.
-                self.menu.removeAllItems()
+            // Clear again right before rebuilding: the initial removeAllItems()
+            // runs synchronously at the start of refreshMenu(), but building
+            // happens here asynchronously. If two refreshes overlap, clearing
+            // here ensures the last completion produces a single menu rather
+            // than appending a duplicate set of items.
+            self.menu.removeAllItems()
+            self.statusBarItem.button?.title = ""
 
-                switch counterType {
-                case .assigned:        self.statusBarItem.button?.title = assignedPulls.isEmpty ? "" : String(assignedPulls.count)
-                case .created:         self.statusBarItem.button?.title = createdPulls.isEmpty ? "" : String(createdPulls.count)
-                case .reviewRequested: self.statusBarItem.button?.title = reviewRequestedPulls.isEmpty ? "" : String(reviewRequestedPulls.count)
-                case .none:            self.statusBarItem.button?.title = ""
-                }
+            // Only categories that actually have pull requests are rendered.
+            let visibleCategories = categories.filter { !(pullsByCategory[$0.id] ?? []).isEmpty }
 
-                if Defaults[.showAssigned] && !assignedPulls.isEmpty {
-                    self.menu.addItem(NSMenuItem(title: "Assigned (\(assignedPulls.count))", action: nil, keyEquivalent: ""))
-                    for pull in assignedPulls {
+            for (index, category) in visibleCategories.enumerated() {
+                let pulls = pullsByCategory[category.id] ?? []
+                let headerTitle = "\(category.name) (\(pulls.count))"
+
+                if category.asSubmenu {
+                    let parent = NSMenuItem(title: headerTitle, action: nil, keyEquivalent: "")
+                    let submenu = NSMenu()
+                    for pull in pulls {
+                        submenu.addItem(self.createMenuItem(pull: pull))
+                    }
+                    parent.submenu = submenu
+                    self.menu.addItem(parent)
+                } else {
+                    self.menu.addItem(NSMenuItem(title: headerTitle, action: nil, keyEquivalent: ""))
+                    for pull in pulls {
                         self.menu.addItem(self.createMenuItem(pull: pull))
                     }
-                    self.menu.addItem(.separator())
-                }
-                
-                if Defaults[.showCreated] && !createdPulls.isEmpty {
-                    self.menu.addItem(NSMenuItem(title: "Created (\(createdPulls.count))", action: nil, keyEquivalent: ""))
-                    for pull in createdPulls {
-                        self.menu.addItem(self.createMenuItem(pull: pull))
-                    }
-                    self.menu.addItem(.separator())
                 }
 
-                if Defaults[.showRequested] && !reviewRequestedPulls.isEmpty {
-                    self.menu.addItem(NSMenuItem(title: "Review Requested (\(reviewRequestedPulls.count))", action: nil, keyEquivalent: ""))
-                    for pull in reviewRequestedPulls {
-                        self.menu.addItem(self.createMenuItem(pull: pull))
-                    }
+                // Keep adjacent submenu categories grouped: no separator between
+                // two consecutive submenu items.
+                let next = index + 1 < visibleCategories.count ? visibleCategories[index + 1] : nil
+                let groupedWithNext = category.asSubmenu && (next?.asSubmenu ?? false)
+                if !groupedWithNext {
                     self.menu.addItem(.separator())
                 }
-                
-                
-                self.addMenuFooterItems()
             }
+
+            let counterCount: Int
+            if counter == SearchCategory.counterMyTeam {
+                counterCount = myTeamCount ?? 0
+            } else if counter != SearchCategory.counterNone {
+                counterCount = (pullsByCategory[counter] ?? []).count
+            } else {
+                counterCount = 0
+            }
+            if counterCount > 0 {
+                self.statusBarItem.button?.title = String(counterCount)
+            }
+
+            self.addMenuFooterItems()
         }
     }
     

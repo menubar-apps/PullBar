@@ -17,37 +17,24 @@ struct PreferencesView: View {
     @Default(.githubAdditionalQuery) var githubAdditionalQuery
     @FromKeychain(.githubToken) var githubToken
 
-    @Default(.showAssigned) var showAssigned
-    @Default(.showCreated) var showCreated
-    @Default(.showRequested) var showRequested
+    @Default(.categories) var categories
 
     @Default(.showAvatar) var showAvatar
     @Default(.showLabels) var showLabels
 
     @Default(.refreshRate) var refreshRate
     @Default(.buildType) var builtType
-    @Default(.counterType) var counterType
+    @Default(.counterSelection) var counterSelection
 
     @State private var showGhAlert = false
 
     @StateObject private var githubTokenValidator = GithubTokenValidator()
 //    @ObservedObject private var launchAtLogin = LaunchAtLogin.observable
-    
-    @State private var isExpanded: Bool = false
 
     var body: some View {
 
         TabView {
             Form {
-                HStack(alignment: .center) {
-                    Text("Pull Requests:").frame(width: 120, alignment: .trailing)
-                    VStack(alignment: .leading){
-                        Toggle("assigned", isOn: $showAssigned)
-                        Toggle("created", isOn: $showCreated)
-                        Toggle("review requested", isOn: $showRequested)
-                    }
-                }
-
                 HStack(alignment: .center) {
                     Text("Build Information:").frame(width: 120, alignment: .trailing)
                     Picker("", selection: $builtType, content: {
@@ -94,6 +81,9 @@ struct PreferencesView: View {
             .padding(8)
             .frame(maxWidth: .infinity)
             .tabItem{Text("General")}
+
+            categoriesTab
+                .tabItem{Text("Categories")}
 
             Form {
                 HStack(alignment: .center) {
@@ -157,13 +147,20 @@ struct PreferencesView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
-                    Picker("", selection: $counterType, content: {
-                        ForEach(CounterType.allCases) { bt in
-                            Text(bt.description)
+                    Picker("", selection: $counterSelection, content: {
+                        Section {
+                            Text("None").tag(SearchCategory.counterNone)
+                            Text("My team").tag(SearchCategory.counterMyTeam)
+                        }
+                        Section {
+                            ForEach(categories) { category in
+                                Text(category.name.isEmpty ? "(unnamed)" : category.name).tag(category.id)
+                            }
                         }
                     })
                     .labelsHidden()
-                    .pickerStyle(RadioGroupPickerStyle())
+                    .pickerStyle(MenuPickerStyle())
+                    .frame(width: 200)
                 }
             }
             .padding(8)
@@ -178,7 +175,7 @@ struct PreferencesView: View {
                         .disableAutocorrection(true)
                         .textContentType(.password)
                         .frame(width: 380)
-                  
+
                 }
                 Text("See the GitHub [search documentation](https://docs.github.com/en/search-github/getting-started-with-searching-on-github/understanding-the-search-syntax) for more information on advanced queries")
                     .font(.footnote)
@@ -189,9 +186,95 @@ struct PreferencesView: View {
                 .tabItem{Text("Advanced")}
 
         }
-        .frame(width: 600)
+        .frame(width: 780)
         .padding()
 
+    }
+
+    /// Categories management tab: a scrollable, reorderable list of categories
+    /// with per-row name/filter editing and deletion, plus a "+" menu to add
+    /// builtin templates or a blank custom category.
+    private var categoriesTab: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Categories appear in the menu in this order. Drag to reorder.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            List {
+                HStack(spacing: 8) {
+                    Color.clear.frame(width: 16, height: 1)
+                    Text("Category name").frame(width: 150, alignment: .leading)
+                    Text("Search query").frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Show in").frame(width: 120, alignment: .leading)
+                    Color.clear.frame(width: 24, height: 1)
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+                ForEach($categories) { $category in
+                    HStack(spacing: 8) {
+                        Image(systemName: "line.3.horizontal")
+                            .frame(width: 16)
+                            .foregroundColor(.secondary)
+                            .help("Drag to reorder")
+                        TextField("name", text: $category.name)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 150)
+                        TextField("filter, e.g. review-requested:@me", text: $category.filter)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(maxWidth: .infinity)
+                        Picker("", selection: $category.asSubmenu) {
+                            Text("Main menu").tag(false)
+                            Text("Submenu").tag(true)
+                        }
+                        .labelsHidden()
+                        .pickerStyle(MenuPickerStyle())
+                        .frame(width: 120)
+                        .help("Where this category's pull requests appear in the menu")
+                        Button {
+                            categories.removeAll { $0.id == category.id }
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(BorderlessButtonStyle())
+                        .frame(width: 24)
+                        .help("Delete category")
+                    }
+                    .padding(.vertical, 2)
+                }
+                .onMove { indices, newOffset in
+                    categories.move(fromOffsets: indices, toOffset: newOffset)
+                }
+                .onDelete { offsets in
+                    categories.remove(atOffsets: offsets)
+                }
+            }
+            .frame(height: 260)
+
+            HStack(spacing: 8) {
+                Menu {
+                    ForEach(BuiltinTemplate.allCases) { template in
+                        Button(template.name) {
+                            categories.append(template.makeCategory(id: UUID().uuidString))
+                        }
+                    }
+                    Divider()
+                    Button("Custom") {
+                        categories.append(SearchCategory(id: UUID().uuidString, name: "", filter: ""))
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .frame(width: 60)
+
+                Text("Use \(SearchCategory.usernamePlaceholder) in a filter to insert your username.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
     }
 }
 
