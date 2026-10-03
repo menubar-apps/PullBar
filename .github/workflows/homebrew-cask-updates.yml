@@ -5,19 +5,20 @@ on:
     types: [published]
   # Manual trigger from the UI
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish to the cask (e.g. v1.14.1)
+        required: true
 
 jobs:
   bump-casks:
     runs-on: macos-latest
     steps:
     - name: Publish release
-      uses: macauley/action-homebrew-bump-cask@v1
-      with:
-        # Required, custom GitHub access token with only the 'public_repo' scope enabled
-        token: ${{ secrets.HOMEBREW_PULLBAR_PUBLISH_TOKEN }}
-        # Bump all outdated casks in this tap
-        tap: menubar-apps/homebrew-menubar-apps
-        # Bump only these casks if outdated
-        cask: pullbar
-        livecheck: true
-        dryrun: false
+      env:
+        # Custom GitHub access token with only the 'public_repo' scope enabled
+        HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_PULLBAR_PUBLISH_TOKEN }}
+        TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      run: |
+        brew tap menubar-apps/menubar-apps
+        brew bump-cask-pr --no-browse --version "${TAG#v}" menubar-apps/menubar-apps/pullbar
