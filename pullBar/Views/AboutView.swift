@@ -23,11 +23,9 @@ struct AboutView: View {
             VStack(spacing: 8) {
                 linkButton("Feature Request", url: "https://github.com/menubar-apps/PullBar/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=") {
                     Image(systemName: "star.fill")
-                        .foregroundStyle(.yellow)
                 }
                 linkButton("Bug Report", url: "https://github.com/menubar-apps/PullBar/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=") {
                     Image(systemName: "ladybug.fill")
-                        .foregroundStyle(.red)
                 }
                 linkButton("Buy me a coffee", url: "https://www.buymeacoffee.com/streetturtle") {
                     Image("bmc-logo-no-background")
