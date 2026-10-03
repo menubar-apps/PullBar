@@ -112,9 +112,11 @@ struct UserEdge: Codable {
 
 struct UserNode: Codable {
     var author: User?
-    
+    var viewerDidAuthor: Bool
+
     enum CodingKeys: String, CodingKey {
         case author
+        case viewerDidAuthor
     }
 }
 

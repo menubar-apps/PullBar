@@ -68,13 +68,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(sender.representedObject as! URL)
     }
 
+    func migrateCategoriesIfNeeded() {
+        if Defaults[.categoriesSchemaVersion] < 1 {
+            Defaults[.categoriesSchemaVersion] = 1
+            migrateLegacyCategories()
+        }
+        // Filters used to store a `<username>` placeholder; GitHub search resolves `@me` itself.
+        if Defaults[.categoriesSchemaVersion] < 2 {
+            Defaults[.categoriesSchemaVersion] = 2
+            Defaults[.categories] = Defaults[.categories].map {
+                var category = $0
+                category.filter = category.filter.replacingOccurrences(of: "<username>", with: "@me")
+                return category
+            }
+        }
+    }
+
     /// One-time migration of the legacy per-type toggles and counter choice into
     /// the user-managed `categories` list and `counterSelection`. Fresh installs
     /// (no persisted legacy settings) keep the default categories instead.
-    func migrateCategoriesIfNeeded() {
-        guard Defaults[.categoriesSchemaVersion] < 1 else { return }
-        Defaults[.categoriesSchemaVersion] = 1
-
+    private func migrateLegacyCategories() {
         let userDefaults = UserDefaults.standard
         let hasLegacySettings = ["showAssigned", "showCreated", "showRequested", "counterType"]
             .contains { userDefaults.object(forKey: $0) != nil }
@@ -117,16 +130,15 @@ extension AppDelegate {
     func refreshMenu() {
         NSLog("Refreshing menu")
 
-        if (Defaults[.githubUsername] == "" || githubToken == "") {
+        if (githubToken == "") {
             self.menu.removeAllItems()
             addMenuFooterItems()
             return
         }
 
 
-        let username = Defaults[.githubUsername]
         let categories = Defaults[.categories].filter {
-            !$0.resolvedFilter(username: username).trimmingCharacters(in: .whitespaces).isEmpty
+            !$0.filter.trimmingCharacters(in: .whitespaces).isEmpty
         }
         let counter = Defaults[.counterSelection]
 
@@ -136,7 +148,7 @@ extension AppDelegate {
 
         for category in categories {
             group.enter()
-            ghClient.getPulls(filter: category.resolvedFilter(username: username)) { pulls in
+            ghClient.getPulls(filter: category.filter) { pulls in
                 pullsByCategory[category.id, default: []].append(contentsOf: pulls)
                 group.leave()
             }
@@ -270,7 +282,7 @@ extension AppDelegate {
         
         issueItemTitle.appendNewLine()
         
-        let approvedByMe = pull.node.reviews.edges.contains{ $0.node.author?.login == Defaults[.githubUsername] }
+        let approvedByMe = pull.node.reviews.edges.contains{ $0.node.viewerDidAuthor }
         issueItemTitle
             .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor(named: "green")! : NSColor.secondaryLabelColor)
             .appendString(string: " " + String(pull.node.reviews.totalCount))

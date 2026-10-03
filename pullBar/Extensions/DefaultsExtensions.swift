@@ -10,7 +10,6 @@ import Defaults
 
 extension Defaults.Keys {
     static let githubApiBaseUrl = Key<String>("githubApiBaseUrl", default: "https://api.github.com")
-    static let githubUsername = Key<String>("githubUsername", default: "")
     static let githubAdditionalQuery = Key<String>("githubAdditionalQuery", default:"")
 
     // Legacy keys, kept only so preferences from older versions can be migrated
@@ -70,19 +69,6 @@ struct SearchCategory: Codable, Defaults.Serializable, Identifiable, Hashable {
         asSubmenu = try container.decodeIfPresent(Bool.self, forKey: .asSubmenu) ?? false
     }
 
-    /// Placeholder in a filter that is replaced with the configured username at
-    /// query time. Not GitHub search syntax — used so a template filter can be
-    /// stored statically while still resolving to the current user.
-    static let usernamePlaceholder = "<username>"
-
-    /// The search filter to actually query with. The `<username>` placeholder is
-    /// replaced with the configured username; everything else is passed through
-    /// verbatim, so raw GitHub search syntax (including a literal `@me`) in a
-    /// custom filter is left untouched.
-    func resolvedFilter(username: String) -> String {
-        filter.replacingOccurrences(of: SearchCategory.usernamePlaceholder, with: username)
-    }
-
     var displayName: String {
         name.isEmpty ? "(unnamed)" : name
     }
@@ -122,10 +108,10 @@ enum BuiltinTemplate: String, CaseIterable, Identifiable {
 
     var filter: String {
         switch self {
-        case .assigned: return "assignee:\(SearchCategory.usernamePlaceholder)"
-        case .created: return "author:\(SearchCategory.usernamePlaceholder)"
-        case .reviewRequested: return "review-requested:\(SearchCategory.usernamePlaceholder)"
-        case .userReviewRequested: return "user-review-requested:\(SearchCategory.usernamePlaceholder)"
+        case .assigned: return "assignee:@me"
+        case .created: return "author:@me"
+        case .reviewRequested: return "review-requested:@me"
+        case .userReviewRequested: return "user-review-requested:@me"
         }
     }
 

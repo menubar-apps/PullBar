@@ -13,7 +13,6 @@ import LaunchAtLogin
 struct PreferencesView: View {
 
     @Default(.githubApiBaseUrl) var githubApiBaseUrl
-    @Default(.githubUsername) var githubUsername
     @Default(.githubAdditionalQuery) var githubAdditionalQuery
     @FromKeychain(.githubToken) var githubToken
 
@@ -94,15 +93,6 @@ struct PreferencesView: View {
                         .textContentType(.password)
                         .frame(width: 200)
                 }
-                HStack(alignment: .center) {
-                    Text("Username:").frame(width: 120, alignment: .trailing)
-                    TextField("", text: $githubUsername)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .disableAutocorrection(true)
-                        .textContentType(.password)
-                        .frame(width: 200)
-                }
-
                 HStack(alignment: .center) {
                     Text("Token:").frame(width: 120, alignment: .trailing)
                     VStack(alignment: .leading) {
@@ -193,7 +183,7 @@ struct PreferencesView: View {
                         TextField("name", text: $category.name)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 150)
-                        TextField("filter, e.g. review-requested:\(SearchCategory.usernamePlaceholder)", text: $category.filter)
+                        TextField("filter, e.g. review-requested:@me", text: $category.filter)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(maxWidth: .infinity)
                         Picker("", selection: $category.asSubmenu) {
@@ -247,7 +237,7 @@ struct PreferencesView: View {
                 }
                 .frame(width: 60)
 
-                Text("Use \(SearchCategory.usernamePlaceholder) in a filter to insert your username.")
+                Text("`@me` in a filter means the GitHub user who owns the token, e.g. `author:@me`. See the GitHub [search documentation](https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests#search-for-my-issues-and-pull-requests).")
                     .font(.footnote)
                     .foregroundColor(.secondary)
                 Spacer()

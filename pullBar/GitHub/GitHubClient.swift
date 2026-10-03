@@ -19,7 +19,7 @@ public class GitHubClient {
     /// user-configured additional query.
     func getPulls(filter: String, completion:@escaping (([Edge]) -> Void)) -> Void {
 
-        if (Defaults[.githubUsername] == "" || githubToken == "") {
+        if (githubToken == "") {
             completion([Edge]())
             return
         }
@@ -151,6 +151,7 @@ public class GitHubClient {
                                         author {
                                             login
                                         }
+                                        viewerDidAuthor
                                     }
                                 }
                             }
@@ -190,7 +191,7 @@ public class GitHubClient {
     
     func getLatestRelease(completion:@escaping (((LatestRelease?) -> Void))) -> Void {
         let headers: HTTPHeaders = [
-            .authorization(username: Defaults[.githubUsername], password: githubToken),
+            .authorization(bearerToken: githubToken),
             .contentType("application/json"),
             .accept("application/json")
         ]

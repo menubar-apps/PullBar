@@ -38,7 +38,7 @@ There are 3 ways of installing the application:
     ```
  - [Download](https://github.com/menubar-apps/PullBar/releases) from github releases
 
-Then [generate](https://github.com/settings/tokens/new?scopes=repo) a github access token (you'll need to have a **repo** scope selected) and paste it in the application preferences with your github username:
+Then [generate](https://github.com/settings/tokens/new?scopes=repo) a github access token (you'll need to have a **repo** scope selected) and paste it in the application preferences:
 
 
 
