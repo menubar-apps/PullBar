@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "48435831fb8bd12e084a35d739c0beb387cc6dc2",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "pullBar",
+      "include-component-in-tag": false,
+      "draft": true,
+      "force-tag-creation": true,
+      "extra-files": ["pullBar/Version.xcconfig"]
+    }
+  }
+}
