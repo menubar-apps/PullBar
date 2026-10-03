@@ -82,6 +82,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return category
             }
         }
+        // The global "Additional Query" setting was appended to every search; move it into each filter.
+        if Defaults[.categoriesSchemaVersion] < 3 {
+            Defaults[.categoriesSchemaVersion] = 3
+            let additionalQuery = Defaults[.legacyAdditionalQuery].trimmingCharacters(in: .whitespacesAndNewlines)
+            if !additionalQuery.isEmpty {
+                Defaults[.categories] = Defaults[.categories].map {
+                    var category = $0
+                    category.filter = "\(category.filter) \(additionalQuery)"
+                    return category
+                }
+            }
+            Defaults.reset(.legacyAdditionalQuery)
+        }
     }
 
     /// One-time migration of the legacy per-type toggles and counter choice into
