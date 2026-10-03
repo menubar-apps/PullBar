@@ -20,38 +20,43 @@ struct AboutView: View {
             Text("version " + currentVersion).font(.footnote)
             Divider()
             
-            Button(action: {
-                openURL(URL(string:"https://github.com/menubar-apps/PullBar/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=")!)
-            }) {
-                HStack {
+            VStack(spacing: 8) {
+                linkButton("Feature Request", url: "https://github.com/menubar-apps/PullBar/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.md&title=") {
                     Image(systemName: "star.fill")
-                    Text("Feature Request")
+                        .foregroundStyle(.yellow)
                 }
-            }
-            Button(action: {
-                openURL(URL(string:"https://github.com/menubar-apps/PullBar/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=")!)
-            }) {
-                HStack {
+                linkButton("Bug Report", url: "https://github.com/menubar-apps/PullBar/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=") {
                     Image(systemName: "ladybug.fill")
-                    Text("Bug Report")
+                        .foregroundStyle(.red)
                 }
-            }
-//            Divider()
-            Button(action: {
-                openURL(URL(string: "https://www.buymeacoffee.com/streetturtle")!)
-            }) {
-                HStack {
+                linkButton("Buy me a coffee", url: "https://www.buymeacoffee.com/streetturtle") {
                     Image("bmc-logo-no-background")
                         .resizable()
                         .scaledToFit()
-                        .padding(.top, 2)
-                    Text("Buy me a coffee")
                 }
             }
-            
+            .frame(width: 200)
+            .padding(.vertical, 4)
+
             Divider()
             AppPromotionView()
         }.padding()
+    }
+
+    private func linkButton<Icon: View>(_ title: String, url: String, @ViewBuilder icon: () -> Icon) -> some View {
+        Button(action: {
+            openURL(URL(string: url)!)
+        }) {
+            HStack(spacing: 8) {
+                icon()
+                    .frame(width: 16, height: 16)
+                Text(title)
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
     }
 }
 
