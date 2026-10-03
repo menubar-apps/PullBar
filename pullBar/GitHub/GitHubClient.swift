@@ -15,8 +15,7 @@ public class GitHubClient {
     @FromKeychain(.githubToken) var githubToken
     
     /// Fetches open pull requests matching a category's search `filter`, wrapped in
-    /// the standard `is:open is:pr ... archived:false` query along with any
-    /// user-configured additional query.
+    /// the standard `is:open is:pr ... archived:false` query.
     func getPulls(filter: String, completion:@escaping (([Edge]) -> Void)) -> Void {
 
         if (githubToken == "") {
@@ -29,7 +28,7 @@ public class GitHubClient {
             .accept("application/json")
         ]
 
-        let searchQuery = "is:open is:pr \(filter) archived:false \(Defaults[.githubAdditionalQuery])"
+        let searchQuery = "is:open is:pr \(filter) archived:false"
 
         let parameters = [
             "query": buildGraphQlQuery(),

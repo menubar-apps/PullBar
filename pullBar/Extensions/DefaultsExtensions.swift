@@ -10,10 +10,10 @@ import Defaults
 
 extension Defaults.Keys {
     static let githubApiBaseUrl = Key<String>("githubApiBaseUrl", default: "https://api.github.com")
-    static let githubAdditionalQuery = Key<String>("githubAdditionalQuery", default:"")
 
     // Legacy keys, kept only so preferences from older versions can be migrated
     // into `categories` / `counterSelection`.
+    static let legacyAdditionalQuery = Key<String>("githubAdditionalQuery", default: "")
     static let showAssigned = Key<Bool>("showAssigned", default: false)
     static let showCreated = Key<Bool>("showCreated", default: false)
     static let showRequested = Key<Bool>("showRequested", default: true)

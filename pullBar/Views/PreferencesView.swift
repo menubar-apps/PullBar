@@ -13,7 +13,6 @@ import LaunchAtLogin
 struct PreferencesView: View {
 
     @Default(.githubApiBaseUrl) var githubApiBaseUrl
-    @Default(.githubAdditionalQuery) var githubAdditionalQuery
     @FromKeychain(.githubToken) var githubToken
 
     @Default(.categories) var categories
@@ -128,24 +127,6 @@ struct PreferencesView: View {
                 githubTokenValidator.validate()
             }
             .tabItem{Text("Authentication")}
-
-            Form {
-                HStack(alignment: .top) {
-                    Text("Additional Query:").frame(width: 120, alignment: .trailing)
-                    TextField("", text: $githubAdditionalQuery)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .disableAutocorrection(true)
-                        .textContentType(.password)
-                        .frame(width: 380)
-
-                }
-                Text("See the GitHub [search documentation](https://docs.github.com/en/search-github/getting-started-with-searching-on-github/understanding-the-search-syntax) for more information on advanced queries")
-                    .font(.footnote)
-                    .padding(.leading, 8)
-                    .foregroundColor(.secondary)
-            }.padding(8)
-                .frame(maxWidth: .infinity)
-                .tabItem{Text("Advanced")}
 
         }
         .frame(width: 780)
