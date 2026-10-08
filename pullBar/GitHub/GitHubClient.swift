@@ -1,8 +1,10 @@
 //
-//  GitHubClient.swift
-//  issueBar
+//  BitbucketClient.swift
+//  pullBar
 //
-//  Created by Pavel Makhov on 2021-11-09.
+//  Client for the Bitbucket Data Center (Server) REST API at /rest/api/1.0.
+//  Authentication is an HTTP access token (or password) sent via Basic auth
+//  using the username that owns the token as the auth username.
 //
 
 import Foundation
@@ -10,216 +12,191 @@ import Defaults
 import Alamofire
 import KeychainAccess
 
-public class GitHubClient {
-    
-    @FromKeychain(.githubToken) var githubToken
-    
-    /// Fetches open pull requests matching a category's search `filter`, wrapped in
-    /// the standard `is:open is:pr ... archived:false` query.
-    func getPulls(filter: String, completion:@escaping (([Edge]) -> Void)) -> Void {
+public class BitbucketClient {
 
-        if (githubToken == "") {
-            completion([Edge]())
+    @FromKeychain(.bitbucketToken) var bitbucketToken
+    @FromKeychain(.bitbucketUsername) var bitbucketUsername
+
+    private static let pageLimit = 50
+
+    /// Fetches open pull requests for a category's role from Bitbucket's
+    /// dashboard endpoint, following pagination until every page is collected.
+    /// Bitbucket DC exposes a single `dashboard/pull-requests` resource that is
+    /// filtered by the `role` query parameter (REVIEWER / AUTHOR / PARTICIPANT);
+    /// the dashboard only returns pull requests the authenticated user is
+    /// involved in.
+    func getPulls(role: BitbucketRole, completion: @escaping (([BitbucketPull]) -> Void)) -> Void {
+
+        if (bitbucketToken.isEmpty || bitbucketUsername.isEmpty) {
+            completion([BitbucketPull]())
             return
         }
 
-        let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
-            .accept("application/json")
+        guard let baseUrl = validatedBaseUrl() else {
+            completion([BitbucketPull]())
+            return
+        }
+
+        var accumulated: [BitbucketPull] = []
+        fetchPullsPage(baseUrl: baseUrl, role: role, start: nil, accumulated: accumulated, completion: completion)
+    }
+
+    private func fetchPullsPage(baseUrl: URL, role: BitbucketRole, start: Int?, accumulated: [BitbucketPull], completion: @escaping (([BitbucketPull]) -> Void)) {
+        var url = baseUrl
+        url.appendPathComponent("rest/api/1.0/dashboard/pull-requests")
+
+        var params: [String: String] = [
+            "limit": String(Self.pageLimit),
+            "state": "OPEN"
         ]
+        if let dashboardRole = role.dashboardRole {
+            params["role"] = dashboardRole
+        }
+        if let start = start {
+            params["start"] = String(start)
+        }
 
-        let searchQuery = "is:open is:pr \(filter) archived:false"
-
-        let parameters = [
-            "query": buildGraphQlQuery(),
-            "variables": ["searchQuery": searchQuery]
-        ] as [String: Any]
-
-        AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+        AF.request(url,
+                   method: .get,
+                   parameters: params,
+                   headers: headers(),
+                   requestModifier: { $0.cachePolicy = .reloadIgnoringLocalCacheData })
             .validate(statusCode: 200..<300)
-            .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
+            .responseDecodable(of: DashboardResponse.self) { response in
                 switch response.result {
-                case .success(let prs):
-                    completion(prs.data.search.edges)
+                case .success(let dashboard):
+                    var all = accumulated
+                    all.append(contentsOf: dashboard.values)
+                    if dashboard.isLastPage || dashboard.nextPageStart == nil {
+                        completion(all)
+                    } else {
+                        self.fetchPullsPage(baseUrl: baseUrl, role: role, start: dashboard.nextPageStart, accumulated: all, completion: completion)
+                    }
                 case .failure(let error):
                     sendNotification(body: error.localizedDescription)
-                    completion([Edge]())
+                    completion(accumulated)
                     print(error)
                 }
             }
     }
 
-    private func buildGraphQlQuery() -> String {
-        
-        var build = ""
-        
-        switch Defaults[.buildType] {
-        case .checks:
-            build = """
-        commits(last: 1) {
-            nodes {
-                commit {
-                    checkSuites(first: 10) {
-                        nodes {
-                            app {
-                                name
-                            }
-                            checkRuns(first: 10) {
-                                totalCount
-                                nodes {
-                                    name
-                                    conclusion
-                                    detailsUrl
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    /// Checks whether the configured credentials authenticate against the
+    /// Bitbucket server. Bitbucket Data Center has no `/users/current`
+    /// endpoint, so validation probes the same dashboard resource the app
+    /// actually uses; it always requires authentication.
+    func validateCredentials(completion: @escaping (Result<Void, BitbucketAuthError>) -> Void) {
+        if bitbucketToken.isEmpty || bitbucketUsername.isEmpty {
+            completion(.failure(.missingCredentials))
+            return
         }
-        """
-        case .commitStatus:
-            build = """
-        commits(last: 1) {
-            nodes {
-                commit {
-                    statusCheckRollup {
-                        state
-                        contexts (first: 20) {
-                            nodes {
-                                ... on StatusContext {
-                                    context
-                                    description
-                                    state
-                                    targetUrl
-                                    description
-                                }
-                                ... on CheckRun {
-                                    name
-                                    conclusion
-                                    detailsUrl
-                                    title
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+
+        guard let baseUrl = validatedBaseUrl() else {
+            completion(.failure(.invalidBaseUrl))
+            return
         }
-        """
-        default:
-            build = ""
-        }
-        
-        
-        
-        return """
-        query($searchQuery: String!) {
-            search(query: $searchQuery, type: ISSUE, first: 30) {
-                issueCount
-                edges {
-                    node {
-                        ... on PullRequest {
-                            number
-                            createdAt
-                            updatedAt
-                            title
-                            headRefName
-                            url
-                            deletions
-                            additions
-                            isDraft
-                            isReadByViewer
-                            author {
-                                login
-                                avatarUrl
-                            }
-                            repository {
-                                name
-                            }
-                             labels(first: 5) {
-                                nodes {
-                                  name
-                                  color
-                                }
-                              }
-                            reviews(states: APPROVED, first: 10) {
-                                totalCount
-                                edges {
-                                    node {
-                                        author {
-                                            login
-                                        }
-                                        viewerDidAuthor
-                                    }
-                                }
-                            }
-                            \(build)
-                        }
-                    }
-                }
-            }
-        }
-        
-        
-        """
-    }
-    
-    func getUser(completion: @escaping (User?) -> Void) {
-        let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
-            .contentType("application/json"),
-            .accept("application/json")
-        ]
-        
-        AF.request(Defaults[.githubApiBaseUrl] + "/user",
+
+        var url = baseUrl
+        url.appendPathComponent("rest/api/1.0/dashboard/pull-requests")
+
+        AF.request(url,
                    method: .get,
-                   headers: headers)
-        .validate(statusCode: 200..<300)
-        .cacheResponse(using: ResponseCacher(behavior: .doNotCache))
-        .responseDecodable(of: User.self) { response in
-            switch response.result {
-            case .success(let repo):
-                completion(repo)
-            case .failure(let error):
-                completion(nil)
-                print(error)
-            }
-        }
-    }
-    
-    func getLatestRelease(completion:@escaping (((LatestRelease?) -> Void))) -> Void {
-        let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
-            .contentType("application/json"),
-            .accept("application/json")
-        ]
-        AF.request("https://api.github.com/repos/menubar-apps/PullBar/releases/latest",
-                   method: .get,
-                   encoding: JSONEncoding.default,
-                   headers: headers)
-            .validate(statusCode: 200..<300)
-            .responseDecodable(of: LatestRelease.self) { response in
-                switch response.result {
-                case .success(let latestRelease):
-                    completion(latestRelease)
-                case .failure(let error):
-                    completion(nil)
-                    if let data = response.data {
-                        let json = String(data: data, encoding: String.Encoding.utf8)
-//                            print("Failure Response: \(json)")
-                    }
-                    sendNotification(body: error.localizedDescription)
+                   parameters: ["limit": "1"],
+                   headers: headers(),
+                   requestModifier: { $0.cachePolicy = .reloadIgnoringLocalCacheData })
+            .response { response in
+                if let error = response.error {
+                    completion(.failure(BitbucketAuthError.from(error: error)))
+                    return
+                }
+                let statusCode = response.response?.statusCode ?? 0
+                switch statusCode {
+                case 200..<300:
+                    completion(.success(()))
+                case 401, 403:
+                    completion(.failure(.unauthorized))
+                default:
+                    completion(.failure(.http(statusCode)))
                 }
             }
+    }
+
+    /// Parses the configured base URL and requires a secure `https` origin with
+    /// a non-empty host before any request (and its Basic credentials) is sent.
+    /// A bare host without a scheme is normalized to `https://`.
+    private func validatedBaseUrl() -> URL? {
+        var raw = Defaults[.bitbucketBaseUrl].trimmingCharacters(in: .whitespacesAndNewlines)
+        if !raw.isEmpty && !raw.contains("://") {
+            raw = "https://" + raw
+        }
+        guard let url = URL(string: raw),
+              url.scheme?.lowercased() == "https",
+              let host = url.host, !host.isEmpty else {
+            return nil
+        }
+        return url
+    }
+
+    /// A web URL for a pull request, used by the "open in browser" menu item.
+    /// Prefers the canonical self link Bitbucket returns; falls back to
+    /// reconstructing the path only when the project key and slug are present.
+    static func webUrl(for pull: BitbucketPull, baseUrl: String) -> URL? {
+        if let selfUrl = pull.url {
+            return selfUrl
+        }
+        guard let projectKey = pull.toRef.repository.project?.key, !projectKey.isEmpty,
+              let base = URL(string: baseUrl) else {
+            return nil
+        }
+        var url = base
+        url.appendPathComponent("projects")
+        url.appendPathComponent(projectKey)
+        url.appendPathComponent("repos")
+        url.appendPathComponent(pull.toRef.repository.slug)
+        url.appendPathComponent("pull-requests")
+        url.appendPathComponent(String(pull.id))
+        return url
+    }
+
+    private func headers() -> HTTPHeaders {
+        var auth = "\(bitbucketUsername):\(bitbucketToken)"
+        if let data = auth.data(using: .utf8) {
+            auth = data.base64EncodedString()
+        }
+        return [
+            .authorization("Basic \(auth)"),
+            .accept("application/json"),
+            .contentType("application/json")
+        ]
     }
 }
 
-class GithubDecoder: JSONDecoder {
-    let dateFormatter = DateFormatter()
-    
-    override init() {
-        super.init()
-        dateDecodingStrategy = .iso8601
+/// User-facing reasons credential validation can fail.
+enum BitbucketAuthError: Error {
+    case missingCredentials
+    case invalidBaseUrl
+    case unauthorized
+    case http(Int)
+    case network(String)
+
+    static func from(error: Error) -> BitbucketAuthError {
+        if let afError = error as? AFError, afError.isSessionTaskError {
+            return .network(error.localizedDescription)
+        }
+        return .network(error.localizedDescription)
+    }
+
+    var message: String {
+        switch self {
+        case .missingCredentials:
+            return "Enter your Bitbucket username and HTTP access token."
+        case .invalidBaseUrl:
+            return "Enter a valid server address, for example https://bitbucket.example.com."
+        case .unauthorized:
+            return "Authentication failed (401/403). Check the username and HTTP access token."
+        case .http(let code):
+            return "Server returned HTTP \(code). Check the base URL and try again."
+        case .network(let detail):
+            return "Could not reach the server: \(detail)"
+        }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  DefaultsExtensions.swift
-//  issueBar
+//  pullBar
 //
 //  Created by Pavel Makhov on 2021-11-10.
 //
@@ -9,20 +9,11 @@ import Foundation
 import Defaults
 
 extension Defaults.Keys {
-    static let githubApiBaseUrl = Key<String>("githubApiBaseUrl", default: "https://api.github.com")
+    static let bitbucketBaseUrl = Key<String>("bitbucketBaseUrl", default: "https://bitbucket.example.com")
 
-    // Legacy keys, kept only so preferences from older versions can be migrated
-    // into `categories` / `counterSelection`.
-    static let legacyAdditionalQuery = Key<String>("githubAdditionalQuery", default: "")
-    static let showAssigned = Key<Bool>("showAssigned", default: false)
-    static let showCreated = Key<Bool>("showCreated", default: false)
-    static let showRequested = Key<Bool>("showRequested", default: true)
-    static let legacyCounterType = Key<String>("counterType", default: "reviewRequested")
-
-    // Ordered list of categories the user has added. Order determines the order
-    // sections appear in the menubar menu.
+    /// Ordered list of categories shown in the menubar menu. Order determines
+    /// the order sections appear.
     static let categories = Key<[SearchCategory]>("categories", default: SearchCategory.defaultCategories)
-    // Bumped when the categories storage format changes so migrations run once.
     static let categoriesSchemaVersion = Key<Int>("categoriesSchemaVersion", default: 0)
 
     static let showAvatar = Key<Bool>("showAvatar", default: false)
@@ -32,45 +23,47 @@ extension Defaults.Keys {
     static let buildType = Key<BuildType>("buildType", default: .none)
     // Which count is shown next to the menubar icon: the id of a category, or
     // `counterNone`.
-    static let counterSelection = Key<String>("counterSelection", default: BuiltinTemplate.reviewRequested.seedId)
+    static let counterSelection = Key<String>("counterSelection", default: BuiltinTemplate.incoming.seedId)
 }
 
 extension KeychainKeys {
+    static let bitbucketToken: KeychainAccessKey = KeychainAccessKey(key: "bitbucketToken")
+    static let bitbucketUsername: KeychainAccessKey = KeychainAccessKey(key: "bitbucketUsername")
+    // Legacy GitHub token, referenced only so it can be removed during the
+    // Bitbucket migration.
     static let githubToken: KeychainAccessKey = KeychainAccessKey(key: "githubToken")
 }
 
-/// A named GitHub search that becomes a section in the menu. Categories are added
-/// by the user (optionally seeded from a builtin template) and are freely
-/// editable, reorderable, and deletable.
+/// A named Bitbucket pull-request role that becomes a section in the menu.
+/// Bitbucket Data Center filters pull requests by the viewer's role rather than
+/// a free-text search query.
 struct SearchCategory: Codable, Defaults.Serializable, Identifiable, Hashable {
     var id: String
     var name: String
-    var filter: String
-    /// When true the category renders as a single collapsible menu item
-    /// ("Name (12) ▸") whose submenu holds the pull requests, instead of listing
-    /// them inline.
+    var role: BitbucketRole
     var asSubmenu: Bool
 
-    init(id: String, name: String, filter: String, asSubmenu: Bool = false) {
+    init(id: String, name: String, role: BitbucketRole, asSubmenu: Bool = false) {
         self.id = id
         self.name = name
-        self.filter = filter
+        self.role = role
         self.asSubmenu = asSubmenu
     }
 
-    // Custom decoding so categories stored before `asSubmenu` existed still
-    // decode (missing key defaults to false) rather than failing and wiping the
-    // user's saved list.
+    // Custom decoding so categories stored by older versions still decode
+    // rather than failing and wiping the user's saved list. The pre-Bitbucket
+    // model stored a `filter` and no `role`, so a missing/unknown role falls
+    // back to `.all` while preserving the category's name and id.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
-        filter = try container.decode(String.self, forKey: .filter)
+        role = (try? container.decode(BitbucketRole.self, forKey: .role)) ?? .all
         asSubmenu = try container.decodeIfPresent(Bool.self, forKey: .asSubmenu) ?? false
     }
 
     var displayName: String {
-        name.isEmpty ? "(unnamed)" : name
+        name.isEmpty ? role.displayName : name
     }
 
     // MARK: - Counter selection tokens
@@ -83,54 +76,72 @@ struct SearchCategory: Codable, Defaults.Serializable, Identifiable, Hashable {
     /// The list a fresh install starts with, matching the previous default of
     /// showing only review requests.
     static let defaultCategories: [SearchCategory] = [
-        BuiltinTemplate.reviewRequested.makeSeedCategory(),
+        BuiltinTemplate.incoming.makeSeedCategory(),
     ]
 }
 
-/// Predefined starting points offered by the "+" menu on the Categories tab.
-/// Once added they become ordinary categories the user can rename or re-query.
+/// Predefined role-based starting points offered by the "+" menu on the
+/// Categories tab. Once added they become ordinary categories the user can
+/// rename.
 enum BuiltinTemplate: String, CaseIterable, Identifiable {
-    case assigned
-    case created
-    case reviewRequested
-    case userReviewRequested
+    case incoming
+    case authored
+    case all
 
     var id: String { rawValue }
 
-    var name: String {
+    var role: BitbucketRole {
         switch self {
-        case .assigned: return "Assigned"
-        case .created: return "Created"
-        case .reviewRequested: return "Review Requested"
-        case .userReviewRequested: return "Review Requested (Direct)"
+        case .incoming: return .incoming
+        case .authored: return .authored
+        case .all: return .all
         }
     }
 
-    var filter: String {
-        switch self {
-        case .assigned: return "assignee:@me"
-        case .created: return "author:@me"
-        case .reviewRequested: return "review-requested:@me"
-        case .userReviewRequested: return "user-review-requested:@me"
-        }
-    }
+    var name: String { role.displayName }
 
-    /// Stable id used for categories created by the defaults and the legacy migration.
+    /// Stable id used for categories created by the defaults.
     var seedId: String {
         switch self {
-        case .assigned: return "seed-assigned"
-        case .created: return "seed-created"
-        case .reviewRequested: return "seed-review-requested"
-        case .userReviewRequested: return "seed-user-review-requested"
+        case .incoming: return "seed-incoming"
+        case .authored: return "seed-authored"
+        case .all: return "seed-all"
         }
     }
 
     func makeCategory(id: String) -> SearchCategory {
-        SearchCategory(id: id, name: name, filter: filter)
+        SearchCategory(id: id, name: name, role: role)
     }
 
     func makeSeedCategory() -> SearchCategory {
         makeCategory(id: seedId)
+    }
+}
+
+enum BitbucketRole: String, Codable, Hashable, CaseIterable, Identifiable {
+    case incoming = "incoming"
+    case authored = "authored"
+    case all = "all"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .incoming: return "Incoming"
+        case .authored: return "Created By Me"
+        case .all: return "All"
+        }
+    }
+
+    /// Value for the dashboard endpoint's `role` query parameter. Bitbucket DC
+    /// exposes a single `dashboard/pull-requests` resource filtered by role;
+    /// `nil` means no role filter (PRs the user is involved in, in any role).
+    var dashboardRole: String? {
+        switch self {
+        case .incoming: return "REVIEWER"
+        case .authored: return "AUTHOR"
+        case .all: return nil
+        }
     }
 }
 

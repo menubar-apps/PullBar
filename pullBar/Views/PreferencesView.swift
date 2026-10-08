@@ -12,8 +12,9 @@ import LaunchAtLogin
 
 struct PreferencesView: View {
 
-    @Default(.githubApiBaseUrl) var githubApiBaseUrl
-    @FromKeychain(.githubToken) var githubToken
+    @Default(.bitbucketBaseUrl) var bitbucketBaseUrl
+    @FromKeychain(.bitbucketToken) var bitbucketToken
+    @FromKeychain(.bitbucketUsername) var bitbucketUsername
 
     @Default(.categories) var categories
 
@@ -27,7 +28,6 @@ struct PreferencesView: View {
     @State private var showGhAlert = false
 
     @StateObject private var githubTokenValidator = GithubTokenValidator()
-//    @ObservedObject private var launchAtLogin = LaunchAtLogin.observable
 
     var body: some View {
 
@@ -85,18 +85,30 @@ struct PreferencesView: View {
 
             Form {
                 HStack(alignment: .center) {
-                    Text("API Base URL:").frame(width: 120, alignment: .trailing)
-                    TextField("", text: $githubApiBaseUrl)
+                    Text("Bitbucket Base URL:").frame(width: 130, alignment: .trailing)
+                    TextField("https://bitbucket.example.com", text: $bitbucketBaseUrl)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .disableAutocorrection(true)
-                        .textContentType(.password)
-                        .frame(width: 200)
+                        .frame(width: 430)
+                        .onChange(of: bitbucketBaseUrl) { _ in
+                            githubTokenValidator.validate()
+                        }
                 }
                 HStack(alignment: .center) {
-                    Text("Token:").frame(width: 120, alignment: .trailing)
+                    Text("Username:").frame(width: 130, alignment: .trailing)
+                    TextField("", text: $bitbucketUsername)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .disableAutocorrection(true)
+                        .frame(width: 430)
+                        .onChange(of: bitbucketUsername) { _ in
+                            githubTokenValidator.validate()
+                        }
+                }
+                HStack(alignment: .center) {
+                    Text("HTTP Token:").frame(width: 130, alignment: .trailing)
                     VStack(alignment: .leading) {
                         HStack() {
-                            SecureField("", text: $githubToken)
+                            SecureField("", text: $bitbucketToken)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .overlay(
                                     Image(systemName: githubTokenValidator.iconName).foregroundColor(githubTokenValidator.iconColor)
@@ -104,7 +116,7 @@ struct PreferencesView: View {
                                         .padding(.trailing, 8)
                                 )
                                 .frame(width: 380)
-                                .onChange(of: githubToken) { _ in
+                                .onChange(of: bitbucketToken) { _ in
                                     githubTokenValidator.validate()
                                 }
                             Button {
@@ -114,7 +126,15 @@ struct PreferencesView: View {
                             }
                             .help("Retry")
                         }
-                        Text("[Generate](https://github.com/settings/tokens/new?scopes=repo) a personal access token, make sure to select **repo** scope")
+                        if let errorMessage = githubTokenValidator.errorMessage {
+                            Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                                .font(.footnote)
+                                .foregroundColor(.red)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(width: 420, alignment: .leading)
+                                .padding(.leading, 8)
+                        }
+                        Text("Use your Bitbucket user's HTTP access token (create one under Account settings > HTTP access tokens). Basic auth with your username is used.")
                             .font(.footnote)
                             .padding(.leading, 8)
                             .foregroundColor(.secondary)
@@ -134,9 +154,9 @@ struct PreferencesView: View {
 
     }
 
-    /// Categories management tab: a scrollable, reorderable list of categories
-    /// with per-row name/filter editing and deletion, plus a "+" menu to add
-    /// builtin templates or a blank custom category.
+    /// Categories management tab: a reorderable list of role-based categories.
+    /// Bitbucket Data Center filters pull requests by the viewer's role, so
+    /// each category simply selects a role.
     private var categoriesTab: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Categories appear in the menu in this order. Drag to reorder. Tick Menubar to show a category's count next to the icon.")
@@ -147,7 +167,7 @@ struct PreferencesView: View {
                 HStack(spacing: 8) {
                     Color.clear.frame(width: 16, height: 1)
                     Text("Category name").frame(width: 150, alignment: .leading)
-                    Text("Search query").frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Role").frame(maxWidth: .infinity, alignment: .leading)
                     Text("Show in").frame(width: 120, alignment: .leading)
                     Text("Menubar").frame(width: 60, alignment: .center)
                     Color.clear.frame(width: 24, height: 1)
@@ -164,9 +184,14 @@ struct PreferencesView: View {
                         TextField("name", text: $category.name)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 150)
-                        TextField("filter, e.g. review-requested:@me", text: $category.filter)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(maxWidth: .infinity)
+                        Picker("", selection: $category.role) {
+                            ForEach(BitbucketRole.allCases, id: \.self) { role in
+                                Text(role.displayName).tag(role)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(MenuPickerStyle())
+                        .frame(width: 150)
                         Picker("", selection: $category.asSubmenu) {
                             Text("Main menu").tag(false)
                             Text("Submenu").tag(true)
@@ -211,14 +236,14 @@ struct PreferencesView: View {
                     }
                     Divider()
                     Button("Custom") {
-                        categories.append(SearchCategory(id: UUID().uuidString, name: "", filter: ""))
+                        categories.append(SearchCategory(id: UUID().uuidString, name: "", role: .all))
                     }
                 } label: {
                     Image(systemName: "plus")
                 }
                 .frame(width: 60)
 
-                Text("`@me` in a filter means the GitHub user who owns the token, e.g. `author:@me`. See the GitHub [search documentation](https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests#search-for-my-issues-and-pull-requests).")
+                Text("Each category maps to a Bitbucket dashboard role: Incoming (PRs you are asked to review), Created By Me, or All (any PR you take part in).")
                     .font(.footnote)
                     .foregroundColor(.secondary)
                 Spacer()

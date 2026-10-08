@@ -1,289 +1,137 @@
 //
-//  GitHubDtos.swift
-//  issueBar
+//  BitbucketDtos.swift
+//  pullBar
 //
-//  Created by Pavel Makhov on 2021-11-10.
+//  DTO models for the Bitbucket Data Center (Bitbucket Server) REST API,
+//  /rest/api/1.0. Adapted from the original GitHub GraphQL models.
 //
 
 import Foundation
 
-struct GraphQlSearchResp: Codable {
-    var data: Data
-    
+struct DashboardResponse: Codable {
+    var isLastPage: Bool
+    var nextPageStart: Int?
+    var values: [BitbucketPull]
+
     enum CodingKeys: String, CodingKey {
-        case data
+        case isLastPage
+        case nextPageStart
+        case values
     }
 }
 
-struct Data: Codable {
-    var search: Search
-
-    enum CodingKeys: String, CodingKey {
-        case search
-    }
-}
-
-struct Search: Codable {
-    var edges: [Edge]
-    var issueCount: Int
-    
-    enum CodingKeys: String, CodingKey {
-        case edges
-        case issueCount
-    }
-}
-
-struct Edges: Codable {
-    var edge: [Edge]
-    
-    enum CodingKeys: String, CodingKey {
-        case edge
-    }
-}
-
-struct Edge: Codable {
-    var node: Pull
-
-    enum CodingKeys: String, CodingKey {
-        case node
-    }
-}
-
-struct Pull: Codable {
-    var url: URL
-    var updatedAt: Date
-    var createdAt: Date
+struct BitbucketPull: Codable {
+    var id: Int
     var title: String
-    var number: Int
-    var deletions: Int?
-    var additions: Int?
-    var reviews: Review
-    var author: User?
-    var repository: Repository
-    var commits: CommitsNodes?
-    var labels: Nodes<Label>
-    var isDraft: Bool
-    var isReadByViewer: Bool
-    
-    enum CodingKeys: String, CodingKey {
-        case url
-        case updatedAt
-        case createdAt
-        case title
-        case number
-        case deletions
-        case additions
-        case reviews
-        case author
-        case repository
-        case commits
-        case labels
-        case isDraft
-        case isReadByViewer
-    }
-}
-
-
-struct Nodes<T: Codable & Hashable>: Codable, Hashable {
-    var nodes: [T]
-    
-    enum CodingKeys: String, CodingKey {
-        case nodes
-    }
-}
-
-struct Review: Codable {
-    var totalCount: Int
-    var edges: [UserEdge]
-    
-    enum CodingKeys: String, CodingKey {
-        case totalCount
-        case edges
-    }
-}
-
-struct UserEdge: Codable {
-    var node: UserNode
-    
-    enum CondigKeys: String, CodingKey {
-        case node
-    }
-}
-
-struct UserNode: Codable {
-    var author: User?
-    var viewerDidAuthor: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case author
-        case viewerDidAuthor
-    }
-}
-
-struct User: Codable {
-    var login: String
-    var avatarUrl: URL?
-    
-    enum CodingKeys: String, CodingKey {
-        case login
-        case avatarUrl
-    }
-    
-    static var ghost: User {
-        return User(login: "ghost", avatarUrl: nil)
-    }
-}
-
-struct Repository: Codable {
-    var name: String
-    
-    enum CodingKeys: String, CodingKey {
-        case name
-    }
-}
-
-struct CommitsNodes: Codable {
-    var nodes: [Commit]
-
-    enum CodingKeys: String, CodingKey {
-        case nodes
-    }
-}
-
-struct Commit: Codable, Hashable {
-    var commit: CheckSuites
-    
-    enum CodingKeys: String, CodingKey {
-        case commit
-    }
-}
-
-struct CheckSuites: Codable, Hashable {
-    var checkSuites: CheckSuitsNodes?
-    var statusCheckRollup: StatusCheckRollup?
-    
-    enum CodingKeys: String, CodingKey {
-        case checkSuites
-        case statusCheckRollup
-    }
-}
-
-
-struct CheckSuitsNodes: Codable, Hashable {
-    var nodes: [CheckSuit]
-
-    enum CodingKeys: String, CodingKey {
-        case nodes
-    }
-}
-
-struct App: Codable, Hashable {
-    var name: String?
-    enum CodingKeys: String, CodingKey {
-        case name
-    }
-}
-
-struct CheckSuit: Codable, Hashable {
-    var app: App?
-    var checkRuns: CheckRun
-    
-    enum CodingKeys: String, CodingKey {
-        case checkRuns
-        case app
-    }
-}
-
-struct CheckRun: Codable, Hashable {
-    var totalCount: Int
-    var nodes: [Check]
-    
-    enum CodingKeys: String, CodingKey {
-        case totalCount
-        case nodes
-    }
-}
-
-struct Check: Codable, Hashable {
-    var name: String
-    var conclusion: String?
-    var detailsUrl: URL
-    
-    enum CodingKeys: String, CodingKey {
-        case name
-        case conclusion
-        case detailsUrl
-    }
-}
-
-struct LatestRelease: Codable {
-    
-    var name: String
-    var assets: [Asset]
-    
-    enum CodingKeys: String, CodingKey {
-        case name
-        case assets
-    }
-}
-
-struct Asset: Codable {
-    var name: String
-    var browserDownloadUrl: String
-    
-    enum CodingKeys: String, CodingKey {
-        case name
-        case browserDownloadUrl = "browser_download_url"
-    }
-}
-
-struct Label: Codable, Hashable {
-    var name: String
-    var color: String
-    
-    enum CodingKeys: String, CodingKey {
-        case name
-        case color
-    }
-}
-
-struct StatusCheckRollup: Codable, Hashable {
     var state: String
-    var contexts: ContextNodes
-    
+    var createdDate: Int64
+    var author: BitbucketParticipant
+    var reviewers: [BitbucketParticipant]?
+    var toRef: BitbucketRef
+    var links: BitbucketLinks?
+
     enum CodingKeys: String, CodingKey {
+        case id
+        case title
         case state
-        case contexts
+        case createdDate
+        case author
+        case reviewers
+        case toRef
+        case links
+    }
+
+    var created: Date {
+        Date(timeIntervalSince1970: Double(createdDate) / 1000.0)
+    }
+
+    /// Approvals exposed by Bitbucket's dashboard: reviewers who marked the PR approved.
+    var approvedViewerCount: Int {
+        (reviewers ?? []).filter { $0.approved == true }.count
+    }
+
+    var repositoryName: String {
+        let repository = toRef.repository
+        if let name = repository.name, !name.isEmpty {
+            return name
+        }
+        return repository.slug
+    }
+
+    var authorName: String {
+        let user = author.user
+        return user.displayName.isEmpty ? user.name : user.displayName
+    }
+
+    var url: URL? {
+        links?.selfLink?.first.flatMap { URL(string: $0.href) }
     }
 }
 
-struct ContextNodes: Codable, Hashable {
-    var nodes: [ContextNode]
-    
+struct BitbucketParticipant: Codable {
+    var user: BitbucketUser
+    var approved: Bool?
+
     enum CodingKeys: String, CodingKey {
-        case nodes
+        case user
+        case approved
     }
 }
 
-struct ContextNode: Codable, Hashable {
-    var name: String?
-    var context: String?
-    var conclusion: String?
-    var state: String?
-    var title: String?
-    var description: String?
-    var detailsUrl: URL?
-    var targetUrl: String?
-    
+struct BitbucketUser: Codable {
+    var name: String
+    var displayName: String
+    var links: BitbucketLinks?
+
     enum CodingKeys: String, CodingKey {
         case name
-        case context
-        case conclusion
-        case state
-        case title
-        case description
-        case detailsUrl
-        case targetUrl
+        case displayName
+        case links
     }
 }
 
+struct BitbucketRef: Codable {
+    var repository: BitbucketRepository
+
+    enum CodingKeys: String, CodingKey {
+        case repository
+    }
+}
+
+struct BitbucketRepository: Codable {
+    var slug: String
+    var name: String?
+    var project: BitbucketProject?
+
+    enum CodingKeys: String, CodingKey {
+        case slug
+        case name
+        case project
+    }
+}
+
+struct BitbucketProject: Codable {
+    var key: String
+
+    enum CodingKeys: String, CodingKey {
+        case key
+    }
+}
+
+struct BitbucketLinks: Codable {
+    var selfLink: [BitbucketHref]?
+    var avatar: [BitbucketHref]?
+
+    enum CodingKeys: String, CodingKey {
+        case selfLink = "self"
+        case avatar
+    }
+}
+
+struct BitbucketHref: Codable {
+    var href: String
+
+    enum CodingKeys: String, CodingKey {
+        case href
+    }
+}

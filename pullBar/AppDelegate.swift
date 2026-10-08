@@ -14,17 +14,19 @@ import KeychainAccess
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
 
-    @FromKeychain(.githubToken) var githubToken
-    
-    let ghClient = GitHubClient()
+    @FromKeychain(.bitbucketToken) var bitbucketToken
+    @FromKeychain(.bitbucketUsername) var bitbucketUsername
+    @FromKeychain(.githubToken) var legacyGithubToken
+
+    let bbClient = BitbucketClient()
     var statusBarItem: NSStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let menu: NSMenu = NSMenu()
-    
+
     var preferencesWindow: NSWindow!
     var aboutWindow: NSWindow!
-    
+
     var timer: Timer? = nil
-    
+
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         migrateCategoriesIfNeeded()
 
@@ -37,9 +39,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         icon?.size = size
         statusButton.image = icon
         statusButton.imagePosition = NSControl.ImagePosition.imageLeft
-        
+
         statusBarItem.menu = menu
-        
+
         timer = Timer.scheduledTimer(
             timeInterval: Double(Defaults[.refreshRate] * 60),
             target: self,
@@ -50,82 +52,48 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         timer?.fire()
         RunLoop.main.add(timer!, forMode: .common)
         NSApp.setActivationPolicy(.accessory)
-
-
-        // Insert code here to initialize your application
     }
-    
+
     func applicationWillTerminate(_ aNotification: Notification) {
-        // Insert code here to tear down your application
     }
-    
+
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
         return true
     }
-    
+
     @objc
     func openLink(_ sender: NSMenuItem) {
-        NSWorkspace.shared.open(sender.representedObject as! URL)
+        guard let url = sender.representedObject as? URL else { return }
+        NSWorkspace.shared.open(url)
     }
 
+    /// Categories used to store a GitHub search query; on first launch after the
+    /// Bitbucket migration reset them to the role-based defaults so stored
+    /// GitHub filters don't leak into the new model.
     func migrateCategoriesIfNeeded() {
-        if Defaults[.categoriesSchemaVersion] < 1 {
-            Defaults[.categoriesSchemaVersion] = 1
-            migrateLegacyCategories()
+        // The legacy GitHub token is no longer usable; remove it rather than
+        // leaving a stale secret in the Keychain.
+        if !legacyGithubToken.isEmpty {
+            legacyGithubToken = ""
         }
-        // Filters used to store a `<username>` placeholder; GitHub search resolves `@me` itself.
-        if Defaults[.categoriesSchemaVersion] < 2 {
-            Defaults[.categoriesSchemaVersion] = 2
-            Defaults[.categories] = Defaults[.categories].map {
-                var category = $0
-                category.filter = category.filter.replacingOccurrences(of: "<username>", with: "@me")
-                return category
+
+        if Defaults[.categoriesSchemaVersion] < 4 {
+            Defaults[.categoriesSchemaVersion] = 4
+            // Existing categories decode into the new role model (a missing
+            // `role` falls back to `.all`), so preserve them. Only a fresh
+            // install with no stored categories gets the default seed.
+            if Defaults[.categories].isEmpty {
+                Defaults[.categories] = SearchCategory.defaultCategories
+            }
+            // Preserve a counter selection that still references a valid
+            // category; only fall back to the default when the stored id no
+            // longer exists.
+            let counter = Defaults[.counterSelection]
+            let validIds = Set(Defaults[.categories].map { $0.id })
+            if counter != SearchCategory.counterNone && !validIds.contains(counter) {
+                Defaults[.counterSelection] = SearchCategory.counterNone
             }
         }
-        // The global "Additional Query" setting was appended to every search; move it into each filter.
-        if Defaults[.categoriesSchemaVersion] < 3 {
-            Defaults[.categoriesSchemaVersion] = 3
-            let additionalQuery = Defaults[.legacyAdditionalQuery].trimmingCharacters(in: .whitespacesAndNewlines)
-            if !additionalQuery.isEmpty {
-                Defaults[.categories] = Defaults[.categories].map {
-                    var category = $0
-                    category.filter = "\(category.filter) \(additionalQuery)"
-                    return category
-                }
-            }
-            Defaults.reset(.legacyAdditionalQuery)
-        }
-    }
-
-    /// One-time migration of the legacy per-type toggles and counter choice into
-    /// the user-managed `categories` list and `counterSelection`. Fresh installs
-    /// (no persisted legacy settings) keep the default categories instead.
-    private func migrateLegacyCategories() {
-        let userDefaults = UserDefaults.standard
-        let hasLegacySettings = ["showAssigned", "showCreated", "showRequested", "counterType"]
-            .contains { userDefaults.object(forKey: $0) != nil }
-        guard hasLegacySettings else { return }
-
-        let counterTemplate: BuiltinTemplate?
-        switch Defaults[.legacyCounterType] {
-        case "none": counterTemplate = nil
-        case "assigned": counterTemplate = .assigned
-        case "created": counterTemplate = .created
-        default: counterTemplate = .reviewRequested
-        }
-
-        // Seed the categories list from the legacy toggles, preserving order. A
-        // counter that pointed at a hidden section adds that section, since the
-        // counter can only show a category's count.
-        let enabled: [BuiltinTemplate: Bool] = [
-            .assigned: Defaults[.showAssigned],
-            .created: Defaults[.showCreated],
-            .reviewRequested: Defaults[.showRequested],
-        ]
-        let seeded = [BuiltinTemplate.assigned, .created, .reviewRequested]
-            .filter { enabled[$0] == true || $0 == counterTemplate }
-        Defaults[.categories] = seeded.map { $0.makeSeedCategory() }
-        Defaults[.counterSelection] = counterTemplate?.seedId ?? SearchCategory.counterNone
     }
 
     @objc
@@ -135,7 +103,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(url.absoluteString, forType: .string)
     }
-
 }
 
 extension AppDelegate {
@@ -143,25 +110,22 @@ extension AppDelegate {
     func refreshMenu() {
         NSLog("Refreshing menu")
 
-        if (githubToken == "") {
+        if (bitbucketToken.isEmpty || bitbucketUsername.isEmpty) {
             self.menu.removeAllItems()
             addMenuFooterItems()
             return
         }
 
-
-        let categories = Defaults[.categories].filter {
-            !$0.filter.trimmingCharacters(in: .whitespaces).isEmpty
-        }
+        let categories = Defaults[.categories]
         let counter = Defaults[.counterSelection]
 
-        var pullsByCategory: [String: [Edge]] = [:]
+        var pullsByCategory: [String: [BitbucketPull]] = [:]
 
         let group = DispatchGroup()
 
         for category in categories {
             group.enter()
-            ghClient.getPulls(filter: category.filter) { pulls in
+            bbClient.getPulls(role: category.role) { pulls in
                 pullsByCategory[category.id, default: []].append(contentsOf: pulls)
                 group.leave()
             }
@@ -213,7 +177,7 @@ extension AppDelegate {
         }
     }
 
-    func addMenuItems(pull: Edge, to menu: NSMenu) {
+    func addMenuItems(pull: BitbucketPull, to menu: NSMenu) {
         let issueItem = createMenuItem(pull: pull)
         menu.addItem(issueItem)
 
@@ -222,7 +186,7 @@ extension AppDelegate {
         let firstLineEnd = (copyTitle.string as NSString).range(of: "\n").location
         let firstLine = NSMutableAttributedString(string: "")
             .appendString(string: "Copy Link", color: NSColor(.primary))
-            .appendString(string: " #" + String(pull.node.number))
+            .appendString(string: " #" + String(pull.id))
             .appendSeparator()
         copyTitle.replaceCharacters(in: NSRange(location: 0, length: firstLineEnd == NSNotFound ? copyTitle.length : firstLineEnd), with: firstLine)
 
@@ -230,14 +194,16 @@ extension AppDelegate {
         copyItem.attributedTitle = copyTitle
         copyItem.isAlternate = true
         copyItem.keyEquivalentModifierMask = [.option]
-        copyItem.representedObject = pull.node.url
-        copyItem.toolTip = pull.node.url.absoluteString
+        if let url = BitbucketClient.webUrl(for: pull, baseUrl: Defaults[.bitbucketBaseUrl]) {
+            copyItem.representedObject = url
+            copyItem.toolTip = url.absoluteString
+        }
         menu.addItem(copyItem)
 
         setAvatar(pull: pull, for: [issueItem, copyItem])
     }
 
-    func setAvatar(pull: Edge, for items: [NSMenuItem]) {
+    func setAvatar(pull: BitbucketPull, for items: [NSMenuItem]) {
         guard Defaults[.showAvatar] else { return }
 
         // Set default image initially
@@ -246,7 +212,8 @@ extension AppDelegate {
         items.forEach { $0.image = resizedDefaultImage }
 
         // Load avatar asynchronously if available
-        if let author = pull.node.author, let imageURL = author.avatarUrl {
+        if let href = pull.author.user.links?.avatar?.first?.href,
+           let imageURL = validatedAvatarUrl(href) {
             NSImage.loadImageAsync(fromURL: imageURL) { loadedImage in
                 guard let loadedImage = loadedImage else { return }
 
@@ -256,157 +223,77 @@ extension AppDelegate {
             }
         }
     }
-    
-    func createMenuItem(pull: Edge) -> NSMenuItem {
-        let issueItem = NSMenuItem(title: "", action: #selector(self.openLink), keyEquivalent: "")
-        
-        let issueItemTitle = NSMutableAttributedString(string: "")
-            .appendString(string: pull.node.isReadByViewer ? "" : "⏺ ", color: .systemBlue)
-        
-        if (pull.node.isDraft) {
-            issueItemTitle
-                .appendIcon(iconName: "git-draft-pull-request", color: NSColor.secondaryLabelColor)
+
+    /// Only loads avatar images served over `https` from the configured
+    /// Bitbucket host, so a server- or author-influenced href cannot direct the
+    /// app to an arbitrary origin or a non-TLS scheme.
+    private func validatedAvatarUrl(_ href: String) -> URL? {
+        guard let url = URL(string: href),
+              url.scheme?.lowercased() == "https",
+              let host = url.host, !host.isEmpty,
+              let baseHost = URL(string: Defaults[.bitbucketBaseUrl])?.host,
+              host.caseInsensitiveCompare(baseHost) == .orderedSame else {
+            return nil
         }
-        
+        return url
+    }
+
+    func createMenuItem(pull: BitbucketPull) -> NSMenuItem {
+        let issueItem = NSMenuItem(title: "", action: #selector(self.openLink), keyEquivalent: "")
+
+        var issueItemTitle = NSMutableAttributedString(string: "")
+
+        if (pull.state == "OPEN") {
+            issueItemTitle.appendString(string: "⏺ ", color: .systemBlue)
+        }
+
+        if (pull.state == "MERGED") {
+            issueItemTitle.appendString(string: "MERGED ", color: .gray)
+        }
+
         issueItemTitle
-            .appendString(string: pull.node.title.trunc(length: 50), color: NSColor(.primary))
-            .appendString(string: " #" +  String(pull.node.number))
+            .appendString(string: pull.title.trunc(length: 50), color: NSColor(.primary))
+            .appendString(string: " #" + String(pull.id))
             .appendSeparator()
-        
+
         issueItemTitle.appendNewLine()
-        
+
         issueItemTitle
             .appendIcon(iconName: "repo")
-            .appendString(string: pull.node.repository.name)
+            .appendString(string: pull.repositoryName)
             .appendSeparator()
             .appendIcon(iconName: "person")
-            .appendString(string: pull.node.author?.login ?? User.ghost.login)
-        
-        if !pull.node.labels.nodes.isEmpty && Defaults[.showLabels] {
-            issueItemTitle
-                .appendNewLine()
-                .appendIcon(iconName: "tag", color: NSColor(.secondary))
-            for label in pull.node.labels.nodes {
-                issueItemTitle
-                    .appendString(string: label.name, color: hexColor(hex: label.color), fontSize: NSFont.smallSystemFontSize)
-                    .appendSeparator()
-            }
-        }
-        
+            .appendString(string: pull.authorName)
+
         issueItemTitle.appendNewLine()
-        
-        let approvedByMe = pull.node.reviews.edges.contains{ $0.node.viewerDidAuthor }
+
+        let approved = pull.approvedViewerCount
         issueItemTitle
-            .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor(named: "green")! : NSColor.secondaryLabelColor)
-            .appendString(string: " " + String(pull.node.reviews.totalCount))
-            .appendSeparator()
-            .appendString(string: "+" + String(pull.node.additions ?? 0), color: NSColor(named: "green")!)
-            .appendString(string: " -" + String(pull.node.deletions ?? 0), color: NSColor(named: "red")!)
+            .appendIcon(iconName: "check-circle", color: approved > 0 ? NSColor(named: "green")! : NSColor.secondaryLabelColor)
+            .appendString(string: " " + String(approved))
             .appendSeparator()
             .appendIcon(iconName: "calendar")
-            .appendString(string: pull.node.createdAt.getElapsedInterval())
-        
-        if let commits = pull.node.commits {
-            
-            if let checkSuites = commits.nodes[0].commit.checkSuites {
-                
-                if checkSuites.nodes.count > 0 {
-                    issueItem.submenu = NSMenu()
-                    issueItemTitle
-                        .appendSeparator()
-                        .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
-                }
-                for checkSuite in checkSuites.nodes {
-                    
-                    if checkSuite.checkRuns.nodes.count > 0 {
-                        issueItem.submenu?.addItem(withTitle: checkSuite.app?.name ?? "empty", action: nil, keyEquivalent: "")
-                    }
-                    for check in checkSuite.checkRuns.nodes {
-                        
-                        let buildItem = NSMenuItem(title: check.name, action: #selector(self.openLink), keyEquivalent: "")
-                        buildItem.representedObject = check.detailsUrl
-                        buildItem.toolTip = check.conclusion
-                        if check.conclusion  == "SUCCESS" {
-                            buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
-                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
-                        } else if check.conclusion  == "FAILURE" {
-                            buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
-                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
-                        } else if check.conclusion  == "ACTION_REQUIRED" {
-                            buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
-                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
-                        } else {
-                            buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
-                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
-                        }
-                        
-                        issueItem.submenu?.addItem(buildItem)
-                    }
-                }
-            }
-            
-            else if let statusCheckRollup = commits.nodes[0].commit.statusCheckRollup {
-                
-                if statusCheckRollup.contexts.nodes.count > 0 {
-                    issueItem.submenu = NSMenu()
-                    issueItemTitle
-                        .appendSeparator()
-                        .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
-                }
-                
-                for check in statusCheckRollup.contexts.nodes {
-                    let itemTitle = NSMutableAttributedString()
-                    itemTitle.appendString(string: check.name ?? check.context ?? "<empty>", color: NSColor(.primary))
-                    itemTitle.appendNewLine()
-                        .appendString(string: check.description ?? check.title ?? "<empty>", color: NSColor(.secondary))
-                    
-                    let buildItem = NSMenuItem(title: "", action: #selector(AppDelegate.openLink), keyEquivalent: "")
-                    buildItem.attributedTitle = itemTitle
-                    
-                    buildItem.representedObject = check.detailsUrl ?? URL.init(string:check.targetUrl ?? "")
-                    
-                    buildItem.toolTip = check.conclusion ?? check.state ?? ""
-                    
-                    let status = check.conclusion ?? check.state ?? ""
-                    switch status {
-                    case "SUCCESS":
-                        buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
-                    case "FAILURE":
-                        buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
-                    case "PENDING":
-                        buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
-                    default:
-                        buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
-                        
-                    }
-                    issueItem.submenu?.addItem(buildItem)
-                }
-            }
-        }
-        
+            .appendString(string: pull.created.getElapsedInterval())
+
         issueItem.attributedTitle = issueItemTitle
-        if pull.node.title.count > 50 {
-            issueItem.toolTip = pull.node.title
+        if pull.title.count > 50 {
+            issueItem.toolTip = pull.title
         }
-        issueItem.representedObject = pull.node.url
-        
+        if let url = BitbucketClient.webUrl(for: pull, baseUrl: Defaults[.bitbucketBaseUrl]) {
+            issueItem.representedObject = url
+        }
+
         return issueItem
     }
-    
+
     func addMenuFooterItems() {
         self.menu.addItem(withTitle: "Refresh", action: #selector(self.refreshMenu), keyEquivalent: "")
         self.menu.addItem(.separator())
         self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: "")
-        // Remove for app store release
-//        self.menu.addItem(withTitle: "Check for updates...", action: #selector(self.checkForUpdates), keyEquivalent: "")
         self.menu.addItem(withTitle: "About PullBar", action: #selector(self.openAboutWindow), keyEquivalent: "")
         self.menu.addItem(withTitle: "Quit", action: #selector(self.quit), keyEquivalent: "")
     }
-    
+
     @objc
     func openPrefecencesWindow(_: NSStatusBarButton?) {
         NSLog("Open preferences window")
@@ -420,22 +307,22 @@ extension AppDelegate {
             backing: .buffered,
             defer: false
         )
-        
+
         preferencesWindow.title = "Preferences"
         preferencesWindow.contentView = NSHostingView(rootView: contentView)
         preferencesWindow.makeKeyAndOrderFront(nil)
         preferencesWindow.styleMask.remove(.resizable)
-        
+
         // allow the preference window can be focused automatically when opened
         NSApplication.shared.activate(ignoringOtherApps: true)
-        
+
         let controller = NSWindowController(window: preferencesWindow)
         controller.showWindow(self)
-        
+
         preferencesWindow.center()
         preferencesWindow.orderFrontRegardless()
     }
-    
+
     @objc
     func openAboutWindow(_: NSStatusBarButton?) {
         NSLog("Open about window")
@@ -449,22 +336,22 @@ extension AppDelegate {
             backing: .buffered,
             defer: false
         )
-        
+
         aboutWindow.title = "About"
         aboutWindow.contentView = NSHostingView(rootView: contentView)
         aboutWindow.makeKeyAndOrderFront(nil)
         aboutWindow.styleMask.remove(.resizable)
-        
+
         // allow the preference window can be focused automatically when opened
         NSApplication.shared.activate(ignoringOtherApps: true)
-        
+
         let controller = NSWindowController(window: aboutWindow)
         controller.showWindow(self)
-        
+
         aboutWindow.center()
         aboutWindow.orderFrontRegardless()
     }
-    
+
     @objc
     func windowClosed(notification: NSNotification) {
         let window = notification.object as? NSWindow
@@ -482,53 +369,19 @@ extension AppDelegate {
             }
         }
     }
-    
+
     @objc
     func quit() {
         NSLog("User click Quit")
         NSApplication.shared.terminate(self)
     }
-    
-    @objc
-    func checkForUpdates(_: NSStatusBarButton?) {
-        let currentVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as! String
-        ghClient.getLatestRelease { latestRelease in
-            if let latestRelease = latestRelease {
-                let versionComparison = currentVersion.compare(latestRelease.name.replacingOccurrences(of: "v", with: ""), options: .numeric)
-                if versionComparison == .orderedAscending {
-                    self.downloadNewVersionDialog(link: latestRelease.assets[0].browserDownloadUrl)
-                } else {
-                    self.dialogWithText(text: "You have the latest version installed!")
-                }
-            }
-        }
-    }
-    
-    func dialogWithText(text: String) -> Void {
-        let alert = NSAlert()
-        alert.messageText = text
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
-        alert.runModal()
-    }
-    func downloadNewVersionDialog(link: String) -> Void {
-        let alert = NSAlert()
-        alert.messageText = "New version is available!"
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "Download")
-        alert.addButton(withTitle: "Cancel")
-        let pressedButton = alert.runModal()
-        if (pressedButton == .alertFirstButtonReturn) {
-            NSWorkspace.shared.open(URL(string: link)!)
-        }
-    }
-    
+
     /// Resizes an NSImage to the specified size
     func resizeImage(image: NSImage, size: NSSize) -> NSImage {
         if image.size.height == size.height && image.size.width == size.width {
             return image
         }
-        
+
         let newImage = NSImage(size: size)
         newImage.lockFocus()
         image.draw(in: NSRect(origin: .zero, size: size),
