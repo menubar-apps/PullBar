@@ -9,6 +9,7 @@ import SwiftUI
 import Defaults
 import KeychainAccess
 import LaunchAtLogin
+import UserNotifications
 
 struct PreferencesView: View {
 
@@ -23,6 +24,10 @@ struct PreferencesView: View {
     @Default(.refreshRate) var refreshRate
     @Default(.buildType) var builtType
     @Default(.counterSelection) var counterSelection
+
+    @Default(.notifyNewPulls) var notifyNewPulls
+    @Default(.playSoundOnNewPulls) var playSoundOnNewPulls
+    @Default(.newPullSound) var newPullSound
 
     @State private var showGhAlert = false
 
@@ -82,6 +87,9 @@ struct PreferencesView: View {
 
             categoriesTab
                 .tabItem{Text("Categories")}
+
+            notificationsTab
+                .tabItem{Text("Notifications")}
 
             Form {
                 HStack(alignment: .center) {
@@ -227,6 +235,44 @@ struct PreferencesView: View {
         .padding()
         .frame(maxWidth: .infinity)
     }
+
+    private var notificationsTab: some View {
+        Form {
+            HStack(alignment: .center) {
+                Text("Show Notification:").frame(width: 120, alignment: .trailing)
+                Toggle("", isOn: $notifyNewPulls)
+                    .onChange(of: notifyNewPulls) { enabled in
+                        if enabled {
+                            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+                        }
+                    }
+            }
+
+            HStack(alignment: .center) {
+                Text("Play Sound:").frame(width: 120, alignment: .trailing)
+                Toggle("", isOn: $playSoundOnNewPulls)
+                Picker("", selection: $newPullSound) {
+                    ForEach(Self.systemSounds, id: \.self) { Text($0) }
+                }
+                .labelsHidden()
+                .pickerStyle(MenuPickerStyle())
+                .frame(width: 140)
+                .disabled(!playSoundOnNewPulls)
+                .onChange(of: newPullSound) { NSSound(named: $0)?.play() }
+            }
+
+            Text("PullBar alerts you when a new pull request shows up in any of your categories. If no notification appears, allow PullBar in System Settings > Notifications.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .padding(.top, 8)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+    }
+
+    private static let systemSounds = ((try? FileManager.default.contentsOfDirectory(atPath: "/System/Library/Sounds")) ?? [])
+        .map { ($0 as NSString).deletingPathExtension }
+        .sorted()
 }
 
 struct PreferencesView_Previews: PreviewProvider {

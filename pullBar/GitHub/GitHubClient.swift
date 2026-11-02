@@ -15,8 +15,9 @@ public class GitHubClient {
     @FromKeychain(.githubToken) var githubToken
     
     /// Fetches open pull requests matching a category's search `filter`, wrapped in
-    /// the standard `is:open is:pr ... archived:false` query.
-    func getPulls(filter: String, completion:@escaping (([Edge]) -> Void)) -> Void {
+    /// the standard `is:open is:pr ... archived:false` query. Passes nil when the
+    /// request fails, so a failure is not mistaken for "no pull requests".
+    func getPulls(filter: String, completion:@escaping (([Edge]?) -> Void)) -> Void {
 
         if (githubToken == "") {
             completion([Edge]())
@@ -43,7 +44,7 @@ public class GitHubClient {
                     completion(prs.data.search.edges)
                 case .failure(let error):
                     sendNotification(body: error.localizedDescription)
-                    completion([Edge]())
+                    completion(nil)
                     print(error)
                 }
             }

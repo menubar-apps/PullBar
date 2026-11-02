@@ -10,6 +10,7 @@ import Defaults
 import SwiftUI
 import Foundation
 import KeychainAccess
+import UserNotifications
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -24,11 +25,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var aboutWindow: NSWindow?
 
     var timer: Timer? = nil
-    
+
+    // Pull request URLs each search filter returned on its last successful fetch.
+    var seenPulls: [String: Set<URL>] = [:]
+
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         migrateCategoriesIfNeeded()
 
         NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.windowClosed), name: NSWindow.willCloseNotification, object: nil)
+        UNUserNotificationCenter.current().delegate = self
 
         guard let statusButton = statusBarItem.button else { return }
         let icon = NSImage(named: "git-pull-request")
@@ -164,7 +169,9 @@ extension AppDelegate {
         for category in categories {
             group.enter()
             ghClient.getPulls(filter: category.filter) { pulls in
-                pullsByCategory[category.id, default: []].append(contentsOf: pulls)
+                if let pulls = pulls {
+                    pullsByCategory[category.id] = pulls
+                }
                 group.leave()
             }
         }
@@ -212,6 +219,46 @@ extension AppDelegate {
             }
 
             self.addMenuFooterItems()
+            self.alertNewPulls(categories: categories, pullsByCategory: pullsByCategory)
+        }
+    }
+
+    /// A filter with no earlier result (first refresh, new or edited category) only records a baseline.
+    func alertNewPulls(categories: [SearchCategory], pullsByCategory: [String: [Edge]]) {
+        let previous = seenPulls
+        var known = previous.values.reduce(into: Set<URL>()) { $0.formUnion($1) }
+        var newPulls: [Pull] = []
+        seenPulls = [:]
+
+        for category in categories {
+            guard let pulls = pullsByCategory[category.id] else {
+                // Fetch failed: keep the last result, so its pull requests don't look new once it recovers.
+                if let last = previous[category.filter] {
+                    seenPulls[category.filter, default: []].formUnion(last)
+                }
+                continue
+            }
+            seenPulls[category.filter, default: []].formUnion(pulls.map { $0.node.url })
+            guard previous[category.filter] != nil else { continue }
+            // ponytail: search returns the first 30 per filter, so a filter with more can alert again
+            // when one drops back into the page; raise `first:` in GitHubClient if that gets noisy.
+            for pull in pulls where known.insert(pull.node.url).inserted {
+                newPulls.append(pull.node)
+            }
+        }
+
+        guard !newPulls.isEmpty else { return }
+        if Defaults[.notifyNewPulls] {
+            for pull in newPulls {
+                sendNotification(
+                    title: pull.title,
+                    body: "\(pull.repository.name) #\(pull.number) by \(pull.author?.login ?? User.ghost.login)",
+                    url: pull.url
+                )
+            }
+        }
+        if Defaults[.playSoundOnNewPulls] {
+            NSSound(named: Defaults[.newPullSound])?.play()
         }
     }
 
@@ -414,7 +461,7 @@ extension AppDelegate {
         NSLog("Open preferences window")
         showWindow(&preferencesWindow, title: "Preferences", content: PreferencesView())
     }
-    
+
     @objc
     func openAboutWindow(_: NSStatusBarButton?) {
         NSLog("Open about window")
@@ -443,7 +490,7 @@ extension AppDelegate {
         window?.makeKeyAndOrderFront(nil)
         window?.orderFrontRegardless()
     }
-    
+
     @objc
     func windowClosed(notification: NSNotification) {
         guard let window = notification.object as? NSWindow,
@@ -460,7 +507,7 @@ extension AppDelegate {
             if self.aboutWindow === window { self.aboutWindow = nil }
         }
     }
-
+    
     @objc
     func quit() {
         NSLog("User click Quit")
@@ -481,7 +528,7 @@ extension AppDelegate {
             }
         }
     }
-
+    
     func dialogWithText(text: String) -> Void {
         let alert = NSAlert()
         alert.messageText = text
@@ -515,5 +562,19 @@ extension AppDelegate {
                   fraction: 1.0)
         newImage.unlockFocus()
         return newImage
+    }
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    // Banners are dropped while the app is active (Preferences open) unless asked for here.
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .list])
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        if let link = response.notification.request.content.userInfo["url"] as? String, let url = URL(string: link) {
+            NSWorkspace.shared.open(url)
+        }
+        completionHandler()
     }
 }
