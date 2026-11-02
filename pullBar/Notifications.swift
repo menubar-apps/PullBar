@@ -8,17 +8,20 @@
 import Foundation
 import UserNotifications
 
-func sendNotification(body: String = "") {
+func sendNotification(title: String = "PullBar", body: String = "", url: URL? = nil) {
   let content = UNMutableNotificationContent()
-  content.title = "PullBar"
+  content.title = title
 
   if body.count > 0 {
     content.body = body
   }
 
-  let uuidString = UUID().uuidString
+  if let url = url {
+    content.userInfo = ["url": url.absoluteString]
+  }
+
   let request = UNNotificationRequest(
-    identifier: uuidString,
+    identifier: url?.absoluteString ?? UUID().uuidString,
     content: content, trigger: nil)
 
   let notificationCenter = UNUserNotificationCenter.current()

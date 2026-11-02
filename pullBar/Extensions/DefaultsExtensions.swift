@@ -33,6 +33,11 @@ extension Defaults.Keys {
     // Which count is shown next to the menubar icon: the id of a category, or
     // `counterNone`.
     static let counterSelection = Key<String>("counterSelection", default: BuiltinTemplate.reviewRequested.seedId)
+
+    static let notifyNewPulls = Key<Bool>("notifyNewPulls", default: false)
+    static let playSoundOnNewPulls = Key<Bool>("playSoundOnNewPulls", default: false)
+    // A name from /System/Library/Sounds, played with NSSound(named:).
+    static let newPullSound = Key<String>("newPullSound", default: "Glass")
 }
 
 extension KeychainKeys {

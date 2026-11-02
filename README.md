@@ -24,6 +24,7 @@ If you liked the PullBar, check the [PullBar Pro](https://menubar-apps.github.io
  - shows pull requests grouped into customizable categories (assigned, created, review requested or any GitHub search query);
  - for each pull request shows title, number, project, author, number of approvals, number of added/deleted lines and how long ago this PR was created;
  - hold Option while the menu is open, then click a pull request to copy its URL;
+ - shows a notification, plays a sound, or both when a new pull request appears in one of your categories (set it up in the **Notifications** tab of Preferences);
  - show check suites information.
 
 # Installation

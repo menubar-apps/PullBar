@@ -10,6 +10,7 @@ import Defaults
 import SwiftUI
 import Foundation
 import KeychainAccess
+import UserNotifications
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -20,15 +21,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var statusBarItem: NSStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let menu: NSMenu = NSMenu()
     
-    var preferencesWindow: NSWindow!
-    var aboutWindow: NSWindow!
-    
+    var preferencesWindow: NSWindow?
+    var aboutWindow: NSWindow?
+
     var timer: Timer? = nil
-    
+
+    // Pull request URLs each search filter returned on its last successful fetch.
+    var seenPulls: [String: Set<URL>] = [:]
+
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         migrateCategoriesIfNeeded()
 
         NotificationCenter.default.addObserver(self, selector: #selector(AppDelegate.windowClosed), name: NSWindow.willCloseNotification, object: nil)
+        UNUserNotificationCenter.current().delegate = self
 
         guard let statusButton = statusBarItem.button else { return }
         let icon = NSImage(named: "git-pull-request")
@@ -39,7 +44,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusButton.imagePosition = NSControl.ImagePosition.imageLeft
         
         statusBarItem.menu = menu
-        
+
+        startTimer()
+        NSApp.setActivationPolicy(.accessory)
+    }
+
+    func startTimer() {
+        timer?.invalidate()
         timer = Timer.scheduledTimer(
             timeInterval: Double(Defaults[.refreshRate] * 60),
             target: self,
@@ -47,12 +58,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             userInfo: nil,
             repeats: true
         )
-        timer?.fire()
         RunLoop.main.add(timer!, forMode: .common)
-        NSApp.setActivationPolicy(.accessory)
-
-
-        // Insert code here to initialize your application
+        timer?.fire()
     }
     
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -162,7 +169,9 @@ extension AppDelegate {
         for category in categories {
             group.enter()
             ghClient.getPulls(filter: category.filter) { pulls in
-                pullsByCategory[category.id, default: []].append(contentsOf: pulls)
+                if let pulls = pulls {
+                    pullsByCategory[category.id] = pulls
+                }
                 group.leave()
             }
         }
@@ -210,6 +219,46 @@ extension AppDelegate {
             }
 
             self.addMenuFooterItems()
+            self.alertNewPulls(categories: categories, pullsByCategory: pullsByCategory)
+        }
+    }
+
+    /// A filter with no earlier result (first refresh, new or edited category) only records a baseline.
+    func alertNewPulls(categories: [SearchCategory], pullsByCategory: [String: [Edge]]) {
+        let previous = seenPulls
+        var known = previous.values.reduce(into: Set<URL>()) { $0.formUnion($1) }
+        var newPulls: [Pull] = []
+        seenPulls = [:]
+
+        for category in categories {
+            guard let pulls = pullsByCategory[category.id] else {
+                // Fetch failed: keep the last result, so its pull requests don't look new once it recovers.
+                if let last = previous[category.filter] {
+                    seenPulls[category.filter, default: []].formUnion(last)
+                }
+                continue
+            }
+            seenPulls[category.filter, default: []].formUnion(pulls.map { $0.node.url })
+            guard previous[category.filter] != nil else { continue }
+            // ponytail: search returns the first 30 per filter, so a filter with more can alert again
+            // when one drops back into the page; raise `first:` in GitHubClient if that gets noisy.
+            for pull in pulls where known.insert(pull.node.url).inserted {
+                newPulls.append(pull.node)
+            }
+        }
+
+        guard !newPulls.isEmpty else { return }
+        if Defaults[.notifyNewPulls] {
+            for pull in newPulls {
+                sendNotification(
+                    title: pull.title,
+                    body: "\(pull.repository.name) #\(pull.number) by \(pull.author?.login ?? User.ghost.login)",
+                    url: pull.url
+                )
+            }
+        }
+        if Defaults[.playSoundOnNewPulls] {
+            NSSound(named: Defaults[.newPullSound])?.play()
         }
     }
 
@@ -410,76 +459,52 @@ extension AppDelegate {
     @objc
     func openPrefecencesWindow(_: NSStatusBarButton?) {
         NSLog("Open preferences window")
-        let contentView = PreferencesView()
-        if preferencesWindow != nil {
-            preferencesWindow.close()
-        }
-        preferencesWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 0, height: 0),
-            styleMask: [.closable, .titled],
-            backing: .buffered,
-            defer: false
-        )
-        
-        preferencesWindow.title = "Preferences"
-        preferencesWindow.contentView = NSHostingView(rootView: contentView)
-        preferencesWindow.makeKeyAndOrderFront(nil)
-        preferencesWindow.styleMask.remove(.resizable)
-        
-        // allow the preference window can be focused automatically when opened
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        
-        let controller = NSWindowController(window: preferencesWindow)
-        controller.showWindow(self)
-        
-        preferencesWindow.center()
-        preferencesWindow.orderFrontRegardless()
+        showWindow(&preferencesWindow, title: "Preferences", content: PreferencesView())
     }
-    
+
     @objc
     func openAboutWindow(_: NSStatusBarButton?) {
         NSLog("Open about window")
-        let contentView = AboutView()
-        if aboutWindow != nil {
-            aboutWindow.close()
-        }
-        aboutWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 240, height: 500),
-            styleMask: [.closable, .titled],
-            backing: .buffered,
-            defer: false
-        )
-        
-        aboutWindow.title = "About"
-        aboutWindow.contentView = NSHostingView(rootView: contentView)
-        aboutWindow.makeKeyAndOrderFront(nil)
-        aboutWindow.styleMask.remove(.resizable)
-        
-        // allow the preference window can be focused automatically when opened
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        
-        let controller = NSWindowController(window: aboutWindow)
-        controller.showWindow(self)
-        
-        aboutWindow.center()
-        aboutWindow.orderFrontRegardless()
+        showWindow(&aboutWindow, title: "About", content: AboutView())
     }
-    
+
+    /// Reuses `window` while it is open; `windowClosed` frees it.
+    private func showWindow<Content: View>(_ window: inout NSWindow?, title: String, content: @autoclosure () -> Content) {
+        if window == nil {
+            let hostingView = NSHostingView(rootView: content())
+            let newWindow = NSWindow(
+                contentRect: NSRect(origin: .zero, size: hostingView.fittingSize),
+                styleMask: [.closable, .titled],
+                backing: .buffered,
+                defer: false
+            )
+            // Code-built windows release themselves on close by default, which over-releases under ARC.
+            newWindow.isReleasedWhenClosed = false
+            newWindow.title = title
+            newWindow.contentView = hostingView
+            newWindow.center()
+            window = newWindow
+        }
+
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
+        window?.orderFrontRegardless()
+    }
+
     @objc
     func windowClosed(notification: NSNotification) {
-        let window = notification.object as? NSWindow
-        if let windowTitle = window?.title {
-            if (windowTitle == "Preferences") {
-                timer?.invalidate()
-                timer = Timer.scheduledTimer(
-                    timeInterval: Double(Defaults[.refreshRate] * 60),
-                    target: self,
-                    selector: #selector(refreshMenu),
-                    userInfo: nil,
-                    repeats: true
-                )
-                timer?.fire()
-            }
+        guard let window = notification.object as? NSWindow,
+              window === preferencesWindow || window === aboutWindow else { return }
+
+        if window === preferencesWindow {
+            startTimer()
+        }
+
+        // AppKit keeps the last key window alive after it closes, so drop its SwiftUI tree once the close finishes.
+        DispatchQueue.main.async {
+            window.contentView = nil
+            if self.preferencesWindow === window { self.preferencesWindow = nil }
+            if self.aboutWindow === window { self.aboutWindow = nil }
         }
     }
     
@@ -537,5 +562,19 @@ extension AppDelegate {
                   fraction: 1.0)
         newImage.unlockFocus()
         return newImage
+    }
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    // Banners are dropped while the app is active (Preferences open) unless asked for here.
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .list])
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        if let link = response.notification.request.content.userInfo["url"] as? String, let url = URL(string: link) {
+            NSWorkspace.shared.open(url)
+        }
+        completionHandler()
     }
 }
