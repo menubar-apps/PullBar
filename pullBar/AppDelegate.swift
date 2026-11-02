@@ -20,9 +20,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var statusBarItem: NSStatusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     let menu: NSMenu = NSMenu()
     
-    var preferencesWindow: NSWindow!
-    var aboutWindow: NSWindow!
-    
+    var preferencesWindow: NSWindow?
+    var aboutWindow: NSWindow?
+
     var timer: Timer? = nil
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
@@ -39,7 +39,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusButton.imagePosition = NSControl.ImagePosition.imageLeft
         
         statusBarItem.menu = menu
-        
+
+        startTimer()
+        NSApp.setActivationPolicy(.accessory)
+    }
+
+    func startTimer() {
+        timer?.invalidate()
         timer = Timer.scheduledTimer(
             timeInterval: Double(Defaults[.refreshRate] * 60),
             target: self,
@@ -47,12 +53,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             userInfo: nil,
             repeats: true
         )
-        timer?.fire()
         RunLoop.main.add(timer!, forMode: .common)
-        NSApp.setActivationPolicy(.accessory)
-
-
-        // Insert code here to initialize your application
+        timer?.fire()
     }
     
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -410,79 +412,55 @@ extension AppDelegate {
     @objc
     func openPrefecencesWindow(_: NSStatusBarButton?) {
         NSLog("Open preferences window")
-        let contentView = PreferencesView()
-        if preferencesWindow != nil {
-            preferencesWindow.close()
-        }
-        preferencesWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 0, height: 0),
-            styleMask: [.closable, .titled],
-            backing: .buffered,
-            defer: false
-        )
-        
-        preferencesWindow.title = "Preferences"
-        preferencesWindow.contentView = NSHostingView(rootView: contentView)
-        preferencesWindow.makeKeyAndOrderFront(nil)
-        preferencesWindow.styleMask.remove(.resizable)
-        
-        // allow the preference window can be focused automatically when opened
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        
-        let controller = NSWindowController(window: preferencesWindow)
-        controller.showWindow(self)
-        
-        preferencesWindow.center()
-        preferencesWindow.orderFrontRegardless()
+        showWindow(&preferencesWindow, title: "Preferences", content: PreferencesView())
     }
     
     @objc
     func openAboutWindow(_: NSStatusBarButton?) {
         NSLog("Open about window")
-        let contentView = AboutView()
-        if aboutWindow != nil {
-            aboutWindow.close()
+        showWindow(&aboutWindow, title: "About", content: AboutView())
+    }
+
+    /// Reuses `window` while it is open; `windowClosed` frees it.
+    private func showWindow<Content: View>(_ window: inout NSWindow?, title: String, content: @autoclosure () -> Content) {
+        if window == nil {
+            let hostingView = NSHostingView(rootView: content())
+            let newWindow = NSWindow(
+                contentRect: NSRect(origin: .zero, size: hostingView.fittingSize),
+                styleMask: [.closable, .titled],
+                backing: .buffered,
+                defer: false
+            )
+            // Code-built windows release themselves on close by default, which over-releases under ARC.
+            newWindow.isReleasedWhenClosed = false
+            newWindow.title = title
+            newWindow.contentView = hostingView
+            newWindow.center()
+            window = newWindow
         }
-        aboutWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 240, height: 500),
-            styleMask: [.closable, .titled],
-            backing: .buffered,
-            defer: false
-        )
-        
-        aboutWindow.title = "About"
-        aboutWindow.contentView = NSHostingView(rootView: contentView)
-        aboutWindow.makeKeyAndOrderFront(nil)
-        aboutWindow.styleMask.remove(.resizable)
-        
-        // allow the preference window can be focused automatically when opened
+
         NSApplication.shared.activate(ignoringOtherApps: true)
-        
-        let controller = NSWindowController(window: aboutWindow)
-        controller.showWindow(self)
-        
-        aboutWindow.center()
-        aboutWindow.orderFrontRegardless()
+        window?.makeKeyAndOrderFront(nil)
+        window?.orderFrontRegardless()
     }
     
     @objc
     func windowClosed(notification: NSNotification) {
-        let window = notification.object as? NSWindow
-        if let windowTitle = window?.title {
-            if (windowTitle == "Preferences") {
-                timer?.invalidate()
-                timer = Timer.scheduledTimer(
-                    timeInterval: Double(Defaults[.refreshRate] * 60),
-                    target: self,
-                    selector: #selector(refreshMenu),
-                    userInfo: nil,
-                    repeats: true
-                )
-                timer?.fire()
-            }
+        guard let window = notification.object as? NSWindow,
+              window === preferencesWindow || window === aboutWindow else { return }
+
+        if window === preferencesWindow {
+            startTimer()
+        }
+
+        // AppKit keeps the last key window alive after it closes, so drop its SwiftUI tree once the close finishes.
+        DispatchQueue.main.async {
+            window.contentView = nil
+            if self.preferencesWindow === window { self.preferencesWindow = nil }
+            if self.aboutWindow === window { self.aboutWindow = nil }
         }
     }
-    
+
     @objc
     func quit() {
         NSLog("User click Quit")
@@ -503,7 +481,7 @@ extension AppDelegate {
             }
         }
     }
-    
+
     func dialogWithText(text: String) -> Void {
         let alert = NSAlert()
         alert.messageText = text
