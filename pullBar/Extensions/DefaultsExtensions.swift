@@ -38,6 +38,17 @@ extension Defaults.Keys {
     static let playSoundOnNewPulls = Key<Bool>("playSoundOnNewPulls", default: false)
     // A name from /System/Library/Sounds, played with NSSound(named:).
     static let newPullSound = Key<String>("newPullSound", default: "Glass")
+
+    // Hidden from the menu, the counter and notifications.
+    static let ignoredPulls = Key<[PullSummary]>("ignoredPulls", default: [])
+}
+
+/// Enough of a pull request to list it in Preferences, even after it drops out of search results.
+struct PullSummary: Codable, Defaults.Serializable, Hashable {
+    var url: URL
+    var title: String
+    var repository: String
+    var number: Int
 }
 
 extension KeychainKeys {

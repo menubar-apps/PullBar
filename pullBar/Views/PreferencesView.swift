@@ -29,6 +29,10 @@ struct PreferencesView: View {
     @Default(.playSoundOnNewPulls) var playSoundOnNewPulls
     @Default(.newPullSound) var newPullSound
 
+    @Default(.ignoredPulls) var ignoredPulls
+    // Pull requests from the last refresh; ignored ones are filtered out when listed.
+    var pulls: [PullSummary] = []
+
     @State private var showGhAlert = false
 
     @StateObject private var githubTokenValidator = GithubTokenValidator()
@@ -90,6 +94,9 @@ struct PreferencesView: View {
 
             notificationsTab
                 .tabItem{Text("Notifications")}
+
+            ignoredTab
+                .tabItem{Text("Ignored")}
 
             Form {
                 HStack(alignment: .center) {
@@ -268,6 +275,47 @@ struct PreferencesView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
+    }
+
+    private var ignoredTab: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Ignored pull requests are hidden from the menu, the menubar count and notifications.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Text("Pull requests").font(.headline)
+            pullList(pulls.filter { pull in !ignoredPulls.contains { $0.url == pull.url } }, empty: "No other pull requests in your categories", button: "Ignore") {
+                ignoredPulls.append($0)
+            }
+
+            Text("Ignored").font(.headline)
+            pullList(ignoredPulls, empty: "No ignored pull requests", button: "Unignore") { pull in
+                ignoredPulls.removeAll { $0.url == pull.url }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+    }
+
+    private func pullList(_ list: [PullSummary], empty: String, button: String, action: @escaping (PullSummary) -> Void) -> some View {
+        List(list, id: \.url) { pull in
+            HStack(spacing: 8) {
+                Link(pull.title, destination: pull.url)
+                    .lineLimit(1)
+                    .help(pull.url.absoluteString)
+                Text("\(pull.repository) #\(pull.number)")
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                Spacer()
+                Button(button) { action(pull) }
+            }
+        }
+        .frame(height: 130)
+        .overlay {
+            if list.isEmpty {
+                Text(empty).foregroundColor(.secondary)
+            }
+        }
     }
 
     private static let systemSounds = ((try? FileManager.default.contentsOfDirectory(atPath: "/System/Library/Sounds")) ?? [])

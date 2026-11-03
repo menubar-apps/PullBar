@@ -28,6 +28,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Pull request URLs each search filter returned on its last successful fetch.
     var seenPulls: [String: Set<URL>] = [:]
+    // Every pull request from the last refresh, ignored ones included, for the Ignored tab.
+    var currentPulls: [PullSummary] = []
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         migrateCategoriesIfNeeded()
@@ -182,11 +184,19 @@ extension AppDelegate {
             self.menu.removeAllItems()
             self.statusBarItem.button?.title = ""
 
+            var listed = Set<URL>()
+            self.currentPulls = categories.flatMap { pullsByCategory[$0.id] ?? [] }
+                .filter { listed.insert($0.node.url).inserted }
+                .map { PullSummary(url: $0.node.url, title: $0.node.title, repository: $0.node.repository.name, number: $0.node.number) }
+
+            let ignored = Set(Defaults[.ignoredPulls].map(\.url))
+            let shownByCategory = pullsByCategory.mapValues { $0.filter { !ignored.contains($0.node.url) } }
+
             // Only categories that actually have pull requests are rendered.
-            let visibleCategories = categories.filter { !(pullsByCategory[$0.id] ?? []).isEmpty }
+            let visibleCategories = categories.filter { !(shownByCategory[$0.id] ?? []).isEmpty }
 
             for (index, category) in visibleCategories.enumerated() {
-                let pulls = pullsByCategory[category.id] ?? []
+                let pulls = shownByCategory[category.id] ?? []
                 let headerTitle = "\(category.displayName) (\(pulls.count))"
 
                 if category.asSubmenu {
@@ -213,20 +223,21 @@ extension AppDelegate {
                 }
             }
 
-            let counterCount = (pullsByCategory[counter] ?? []).count
+            let counterCount = (shownByCategory[counter] ?? []).count
             if counterCount > 0 {
                 self.statusBarItem.button?.title = String(counterCount)
             }
 
             self.addMenuFooterItems()
-            self.alertNewPulls(categories: categories, pullsByCategory: pullsByCategory)
+            // Unfiltered, so a pull request doesn't look new once it is unignored.
+            self.alertNewPulls(categories: categories, pullsByCategory: pullsByCategory, ignored: ignored)
         }
     }
 
     /// A filter with no earlier result (first refresh, new or edited category) only records a baseline.
-    func alertNewPulls(categories: [SearchCategory], pullsByCategory: [String: [Edge]]) {
+    func alertNewPulls(categories: [SearchCategory], pullsByCategory: [String: [Edge]], ignored: Set<URL>) {
         let previous = seenPulls
-        var known = previous.values.reduce(into: Set<URL>()) { $0.formUnion($1) }
+        var known = previous.values.reduce(into: ignored) { $0.formUnion($1) }
         var newPulls: [Pull] = []
         seenPulls = [:]
 
@@ -459,7 +470,7 @@ extension AppDelegate {
     @objc
     func openPrefecencesWindow(_: NSStatusBarButton?) {
         NSLog("Open preferences window")
-        showWindow(&preferencesWindow, title: "Preferences", content: PreferencesView())
+        showWindow(&preferencesWindow, title: "Preferences", content: PreferencesView(pulls: currentPulls))
     }
 
     @objc
