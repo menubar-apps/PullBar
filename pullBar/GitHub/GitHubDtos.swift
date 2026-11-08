@@ -8,10 +8,12 @@
 import Foundation
 
 struct GraphQlSearchResp: Codable {
-    var data: Data
+    var data: Data?
+    var errors: [GraphQLError]?
     
     enum CodingKeys: String, CodingKey {
         case data
+        case errors
     }
 }
 
@@ -26,10 +28,12 @@ struct Data: Codable {
 struct Search: Codable {
     var edges: [Edge]
     var issueCount: Int
+    var pageInfo: PageInfo
     
     enum CodingKeys: String, CodingKey {
         case edges
         case issueCount
+        case pageInfo
     }
 }
 
@@ -64,6 +68,11 @@ struct Pull: Codable {
     var labels: Nodes<Label>
     var isDraft: Bool
     var isReadByViewer: Bool
+    var mergeable: String
+    var mergeStateStatus: String
+    var reviewDecision: String?
+    var reviewThreads: ReviewThreads
+    var commentReviews: Review
     
     enum CodingKeys: String, CodingKey {
         case url
@@ -80,6 +89,7 @@ struct Pull: Codable {
         case labels
         case isDraft
         case isReadByViewer
+        case mergeable, mergeStateStatus, reviewDecision, reviewThreads, commentReviews
     }
 }
 
@@ -113,10 +123,13 @@ struct UserEdge: Codable {
 struct UserNode: Codable {
     var author: User?
     var viewerDidAuthor: Bool
+    var state: String
+    var submittedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case author
         case viewerDidAuthor
+        case state, submittedAt
     }
 }
 
@@ -259,9 +272,10 @@ struct StatusCheckRollup: Codable, Hashable {
 
 struct ContextNodes: Codable, Hashable {
     var nodes: [ContextNode]
+    var totalCount: Int
     
     enum CodingKeys: String, CodingKey {
-        case nodes
+        case nodes, totalCount
     }
 }
 
@@ -274,6 +288,7 @@ struct ContextNode: Codable, Hashable {
     var description: String?
     var detailsUrl: URL?
     var targetUrl: String?
+    var status: String?
     
     enum CodingKeys: String, CodingKey {
         case name
@@ -283,7 +298,82 @@ struct ContextNode: Codable, Hashable {
         case title
         case description
         case detailsUrl
-        case targetUrl
+        case targetUrl, status
     }
 }
 
+
+struct GraphQLError: Codable { var message: String }
+struct PageInfo: Codable { var hasNextPage: Bool; var endCursor: String? }
+struct ReviewThreads: Codable {
+    var totalCount: Int
+    var nodes: [ReviewThread]
+}
+struct ReviewThread: Codable { var isResolved: Bool }
+
+enum CIState: String {
+    case passed = "CI passed"
+    case failed = "CI failed"
+    case pending = "CI running / queued"
+    case missing = "No CI reported"
+    case unknown = "CI incomplete / unknown"
+}
+
+extension Pull {
+    // GitHub returns the latest opinionated review per person, not every
+    // historical approval. A later request for changes replaces an approval.
+    var approvalCount: Int {
+        Set(reviews.edges.filter { $0.node.state == "APPROVED" }
+            .compactMap { $0.node.author?.login }).count
+    }
+    var changesRequested: Bool {
+        reviewDecision == "CHANGES_REQUESTED" || reviews.edges.contains { $0.node.state == "CHANGES_REQUESTED" }
+    }
+    var unresolvedThreads: Int { reviewThreads.nodes.filter { !$0.isResolved }.count }
+    var detailsComplete: Bool {
+        reviews.edges.count == reviews.totalCount && reviewThreads.nodes.count == reviewThreads.totalCount
+    }
+    var ciState: CIState {
+        guard let rollup = commits?.nodes.first?.commit.statusCheckRollup,
+              rollup.contexts.totalCount > 0 else { return .missing }
+        // The rollup covers all contexts, including ones beyond the details page.
+        if ["FAILURE", "ERROR"].contains(rollup.state) { return .failed }
+        if ["PENDING", "EXPECTED"].contains(rollup.state) { return .pending }
+        guard rollup.state == "SUCCESS",
+              rollup.contexts.nodes.count == rollup.contexts.totalCount else { return .unknown }
+        let contexts = rollup.contexts.nodes
+        let allFinished = contexts.allSatisfy {
+            if let status = $0.status {
+                return status == "COMPLETED" && ["SUCCESS", "NEUTRAL", "SKIPPED"].contains($0.conclusion ?? "")
+            }
+            return $0.state == "SUCCESS"
+        }
+        // Skipped / neutral checks alone do not prove that CI actually ran.
+        let hasSuccess = contexts.contains { $0.conclusion == "SUCCESS" || $0.state == "SUCCESS" }
+        return allFinished && hasSuccess ? .passed : .unknown
+    }
+    var readyToMerge: Bool {
+        !isDraft && detailsComplete && approvalCount >= 2 && ciState == .passed
+            && !changesRequested && unresolvedThreads == 0
+            && mergeable == "MERGEABLE" && mergeStateStatus == "CLEAN"
+            && (reviewDecision == nil || reviewDecision == "APPROVED")
+    }
+    func hasUnreadReview(since lastRead: Date?) -> Bool {
+        guard !isReadByViewer else { return false }
+        return commentReviews.edges.contains {
+            guard !$0.node.viewerDidAuthor, let submitted = $0.node.submittedAt else { return false }
+            if let lastRead = lastRead { return submitted > lastRead }
+            return !isReadByViewer
+        }
+    }
+    func actionReasons(lastRead: Date?) -> [String] {
+        var reasons: [String] = []
+        if ciState == .failed { reasons.append("Fix CI") }
+        if changesRequested { reasons.append("Changes requested") }
+        if unresolvedThreads > 0 { reasons.append("\(unresolvedThreads) unresolved discussions") }
+        if hasUnreadReview(since: lastRead) { reasons.append("New review comments") }
+        if mergeable == "CONFLICTING" { reasons.append("Resolve conflicts") }
+        if readyToMerge { reasons.append("Ready to merge") }
+        return reasons
+    }
+}
