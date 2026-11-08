@@ -37,6 +37,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         icon?.size = size
         statusButton.image = icon
         statusButton.imagePosition = NSControl.ImagePosition.imageLeft
+        updateStatusCounter(0)
         
         statusBarItem.menu = menu
         
@@ -139,12 +140,46 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension AppDelegate {
+    /// Keep the icon as a template image, while rendering the counter in full color.
+    func updateStatusCounter(_ count: Int) {
+        guard let button = statusBarItem.button else { return }
+        button.title = ""
+        button.attributedTitle = NSAttributedString(string: "")
+        button.setAccessibilityLabel("PullBar")
+        button.setAccessibilityValue(count > 0 ? "\(count) pull requests" : "")
+
+        guard count > 0 else { return }
+
+        let text = NSAttributedString(string: String(count), attributes: [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .bold),
+            .foregroundColor: NSColor.white,
+        ])
+        let textSize = text.size()
+        let badgeSize = NSSize(width: max(18, ceil(textSize.width) + 10), height: 18)
+        let badge = NSImage(size: badgeSize, flipped: false) { rect in
+            NSColor.systemRed.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: 9, yRadius: 9).fill()
+            text.draw(at: NSPoint(
+                x: (rect.width - textSize.width) / 2,
+                y: (rect.height - textSize.height) / 2
+            ))
+            return true
+        }
+        badge.isTemplate = false
+
+        let attachment = NSTextAttachment()
+        attachment.image = badge
+        attachment.bounds = NSRect(x: 0, y: -4, width: badgeSize.width, height: badgeSize.height)
+        button.attributedTitle = NSAttributedString(attachment: attachment)
+    }
+
     @objc
     func refreshMenu() {
         NSLog("Refreshing menu")
 
         if (githubToken == "") {
             self.menu.removeAllItems()
+            updateStatusCounter(0)
             addMenuFooterItems()
             return
         }
@@ -171,7 +206,6 @@ extension AppDelegate {
             // An empty NSMenu will not open, so hold the previous items until
             // the new ones are ready to replace them.
             self.menu.removeAllItems()
-            self.statusBarItem.button?.title = ""
 
             // Only categories that actually have pull requests are rendered.
             let visibleCategories = categories.filter { !(pullsByCategory[$0.id] ?? []).isEmpty }
@@ -205,9 +239,7 @@ extension AppDelegate {
             }
 
             let counterCount = (pullsByCategory[counter] ?? []).count
-            if counterCount > 0 {
-                self.statusBarItem.button?.title = String(counterCount)
-            }
+            self.updateStatusCounter(counterCount)
 
             self.addMenuFooterItems()
         }
