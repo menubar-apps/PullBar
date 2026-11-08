@@ -282,6 +282,22 @@ extension AppDelegate {
             .appendIcon(iconName: "person")
             .appendString(string: pull.node.author?.login ?? User.ghost.login)
         
+        let approvalCount = pull.node.reviews.totalCount
+        let approvalColor = approvalCount > 0 ? NSColor(named: "green")! : NSColor.secondaryLabelColor
+        let approvedByMe = pull.node.reviews.edges.contains { $0.node.viewerDidAuthor }
+        let approvalLabel = approvalCount == 1 ? "1 approval" : "\(approvalCount) approvals"
+
+        issueItemTitle
+            .appendNewLine()
+            .appendIcon(iconName: "check-circle", color: approvalColor)
+        issueItemTitle.append(NSAttributedString(string: approvalLabel, attributes: [
+            .foregroundColor: approvalColor,
+            .font: NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold),
+        ]))
+        if approvedByMe {
+            issueItemTitle.appendString(string: " (you approved)")
+        }
+
         if !pull.node.labels.nodes.isEmpty && Defaults[.showLabels] {
             issueItemTitle
                 .appendNewLine()
@@ -295,11 +311,7 @@ extension AppDelegate {
         
         issueItemTitle.appendNewLine()
         
-        let approvedByMe = pull.node.reviews.edges.contains{ $0.node.viewerDidAuthor }
         issueItemTitle
-            .appendIcon(iconName: "check-circle", color: approvedByMe ? NSColor(named: "green")! : NSColor.secondaryLabelColor)
-            .appendString(string: " " + String(pull.node.reviews.totalCount))
-            .appendSeparator()
             .appendString(string: "+" + String(pull.node.additions ?? 0), color: NSColor(named: "green")!)
             .appendString(string: " -" + String(pull.node.deletions ?? 0), color: NSColor(named: "red")!)
             .appendSeparator()
