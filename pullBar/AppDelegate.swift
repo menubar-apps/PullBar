@@ -182,9 +182,11 @@ extension AppDelegate {
         if reviews > 0 { title.append(counterBadge(reviews, color: .systemRed)) }
         if actions > 0 {
             if reviews > 0 { title.append(NSAttributedString(string: " ")) }
-            // A translucent red background distinguishes personal actions from
-            // urgent reviews. Keep the text opaque and adaptive for readability.
-            title.append(counterBadge(actions, color: NSColor.systemRed.withAlphaComponent(0.25), textColor: .labelColor))
+            title.appendIcon(iconName: "person", color: .labelColor)
+            title.append(NSAttributedString(string: String(actions), attributes: [
+                .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold),
+                .foregroundColor: NSColor.labelColor,
+            ]))
         }
         button.title = ""
         button.attributedTitle = title
@@ -362,10 +364,10 @@ extension AppDelegate {
         switch pull.node.ciState {
         case .passed: ciColor = .systemGreen
         case .failed: ciColor = .systemRed
-        case .pending: ciColor = .systemOrange
+        case .pending, .running, .queued: ciColor = .systemOrange
         case .missing, .unknown: ciColor = .secondaryLabelColor
         }
-        issueItemTitle.appendString(string: pull.node.ciState.rawValue, color: ciColor)
+        issueItemTitle.appendString(string: pull.node.ciSummary, color: ciColor)
         var states = reasons(for: pull.node)
         if reviewURLs.contains(pull.node.url) { states.insert("Your review requested", at: 0) }
         if !pull.node.detailsComplete { states.append("Review details incomplete — check GitHub") }

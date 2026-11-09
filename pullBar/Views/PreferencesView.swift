@@ -34,7 +34,7 @@ struct PreferencesView: View {
         TabView {
             Form {
                 Toggle("Action dashboard", isOn: $actionDashboard)
-                Text("Solid red: PRs awaiting your review. Soft red: your PRs requiring action. Each PR counts once per section.")
+                Text("Red badge: PRs awaiting your review. Person + count: your PRs requiring action. Each PR counts once per section.")
                     .font(.footnote).foregroundColor(.secondary)
                 Text("Ready to merge requires 2 approvals, successful CI and no GitHub blockers. CI is always checked.")
                     .font(.footnote).foregroundColor(.secondary)
