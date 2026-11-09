@@ -100,6 +100,22 @@ struct ActionRulesTests {
         pr = base
         pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0].status = "IN_PROGRESS"
         expect(!pr.readyToMerge, "A running check is not complete")
+        expect(pr.ciState == .running, "Running checks are explicitly identified")
+        for status in ["QUEUED", "WAITING", "REQUESTED", "PENDING"] {
+            pr = base
+            pr.commits!.nodes[0].commit.statusCheckRollup!.state = "PENDING"
+            pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0].status = status
+            expect(pr.ciState == .queued && !pr.readyToMerge, "Queued checks must not be called running")
+        }
+        pr = base
+        pr.commits!.nodes[0].commit.statusCheckRollup!.state = "PENDING"
+        pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0].status = nil
+        pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0].state = "PENDING"
+        expect(pr.ciState == .pending, "Legacy statuses cannot prove execution has started")
+        pr = base
+        pr.commits!.nodes[0].commit.statusCheckRollup!.state = "FAILURE"
+        pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0].status = "IN_PROGRESS"
+        expect(pr.ciState == .failed && pr.ciSummary.contains("other checks running"), "Failure and ongoing checks both remain visible")
         pr = base
         let submitted = Date(timeIntervalSince1970: 100)
         pr.commentReviews = Review(totalCount: 1, edges: [UserEdge(node: UserNode(

@@ -35,10 +35,10 @@ existing custom categories and single category counter again; saved categories
 are preserved.
 
 - **Red badge:** open PRs requesting your review (excluding your own PRs).
-- **Soft red badge (25% opacity):** your open PRs with failing CI, requested changes, unresolved
+- **Person icon + plain count:** your open PRs with failing CI, requested changes, unresolved
   review discussions, new review comments, conflicts, or ready to merge.
 - Each PR counts once in its section, even when it has several action reasons.
-  Zero badges are hidden; hover over the icon for the meaning of both counts.
+  Zero counters are hidden; hover over the icon for the meaning of both counts.
 - Each row shows current approvals, CI state and action reasons. Diff line counts
   are hidden. Click a PR to open it; Option-click still copies its URL.
 - **Ready to merge** requires two distinct current approving reviewers, at least
@@ -51,6 +51,8 @@ are preserved.
   opened that PR from PullBar. GitHub does not expose an individual read flag per
   review here. Opening a PR acknowledges existing comments locally; unresolved
   threads and change requests remain actionable until addressed on GitHub.
+- CI distinguishes running checks, queued/waiting checks and pending legacy statuses.
+  An existing failure stays visible even while other checks run.
 - CI is fetched regardless of the old build-display setting. Missing, queued,
   unknown, or exclusively skipped checks never imply successful tests. PullBar
   reports GitHub checks; it cannot infer whether a workflow actually contains tests.

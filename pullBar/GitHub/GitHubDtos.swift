@@ -315,7 +315,9 @@ struct ReviewThread: Codable { var isResolved: Bool }
 enum CIState: String {
     case passed = "CI passed"
     case failed = "CI failed"
-    case pending = "CI running / queued"
+    case pending = "CI pending"
+    case running = "CI checks running"
+    case queued = "CI queued / waiting"
     case missing = "No CI reported"
     case unknown = "CI incomplete / unknown"
 }
@@ -339,6 +341,11 @@ extension Pull {
               rollup.contexts.totalCount > 0 else { return .missing }
         // The rollup covers all contexts, including ones beyond the details page.
         if ["FAILURE", "ERROR"].contains(rollup.state) { return .failed }
+        if hasRunningChecks { return .running }
+        if rollup.contexts.nodes.contains(where: {
+            ["QUEUED", "WAITING", "REQUESTED", "PENDING"].contains($0.status ?? "")
+        }) { return .queued }
+        // Legacy commit statuses do not distinguish running from queued.
         if ["PENDING", "EXPECTED"].contains(rollup.state) { return .pending }
         guard rollup.state == "SUCCESS",
               rollup.contexts.nodes.count == rollup.contexts.totalCount else { return .unknown }
@@ -352,6 +359,17 @@ extension Pull {
         // Skipped / neutral checks alone do not prove that CI actually ran.
         let hasSuccess = contexts.contains { $0.conclusion == "SUCCESS" || $0.state == "SUCCESS" }
         return allFinished && hasSuccess ? .passed : .unknown
+    }
+    var hasRunningChecks: Bool {
+        commits?.nodes.first?.commit.statusCheckRollup?.contexts.nodes.contains {
+            $0.status == "IN_PROGRESS"
+        } ?? false
+    }
+    var ciSummary: String {
+        if ciState == .failed && hasRunningChecks {
+            return "CI failed · other checks running"
+        }
+        return ciState.rawValue
     }
     var readyToMerge: Bool {
         !isDraft && detailsComplete && approvalCount >= 2 && ciState == .passed
