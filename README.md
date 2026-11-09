@@ -26,6 +26,50 @@ If you liked the PullBar, check the [PullBar Pro](https://menubar-apps.github.io
  - hold Option while the menu is open, then click a pull request to copy its URL;
  - show check suites information.
 
+# Action dashboard (this fork)
+
+Enabled by default in Preferences → General. The menu shows **To review** and
+**My PRs**, with actionable PRs first. Draft PRs are excluded from all sections and counters.
+Your ready-to-merge PRs have a green check beside the title and a green status. Disable **Action dashboard** to use the
+existing custom categories and single category counter again; saved categories
+are preserved.
+
+- **Red badge:** open PRs requesting your review (excluding your own PRs).
+- **Person icon + plain count:** your open PRs with failing CI, requested changes, unresolved
+  review discussions, new review comments, conflicts, or ready to merge.
+- Each PR counts once in its section, even when it has several action reasons.
+  Zero counters are hidden; hover over the icon for the meaning of both counts.
+- Each row shows current approvals, CI state and action reasons. Diff line counts
+  are hidden. Click a PR to open it; Option-click still copies its URL.
+- **Ready to merge** requires two distinct current approving reviewers, at least
+  one successful CI check, completed successful/neutral/skipped remaining checks,
+  no unresolved discussions or requested changes, a non-draft PR, and GitHub's
+  `MERGEABLE` / `CLEAN` state with no outstanding review requirement. This is an
+  indication based on the last refresh, not an automatic merge or a guarantee
+  that every possible merge permission is satisfied.
+- Review comments use GitHub's PR-level unread flag and the local time you last
+  opened that PR from PullBar. GitHub does not expose an individual read flag per
+  review here. Opening a PR acknowledges existing comments locally; unresolved
+  threads and change requests remain actionable until addressed on GitHub.
+- CI distinguishes running checks, queued/waiting checks and pending legacy statuses.
+  An existing failure stays visible even while other checks run.
+- CI is fetched regardless of the old build-display setting. Missing, queued,
+  unknown, or exclusively skipped checks never imply successful tests. PullBar
+  reports GitHub checks; it cannot infer whether a workflow actually contains tests.
+- Searches are paginated (GitHub's 1,000-result maximum is reported as an error).
+  Review decisions, discussion threads and CI details are limited to 100 each;
+  incomplete details are labelled and cannot produce a ready-to-merge verdict.
+  The latest 100 comment reviews are inspected for unread feedback.
+- Refresh errors retain the previous list with a warning and replace counters
+  with `!`, so stale data cannot look like an empty action queue.
+
+Run the standalone action-rule checks without accessing GitHub or the keychain:
+
+```sh
+swiftc pullBar/GitHub/GitHubDtos.swift Tests/ActionRulesTests.swift -o /tmp/pullbar-action-tests
+/tmp/pullbar-action-tests
+```
+
 # Installation
 
 There are 3 ways of installing the application: 

@@ -15,13 +15,14 @@ struct PreferencesView: View {
     @Default(.githubApiBaseUrl) var githubApiBaseUrl
     @FromKeychain(.githubToken) var githubToken
 
+    @Default(.actionDashboard) var actionDashboard
     @Default(.categories) var categories
 
     @Default(.showAvatar) var showAvatar
     @Default(.showLabels) var showLabels
+    @Default(.showCIDiagnostics) var showCIDiagnostics
 
     @Default(.refreshRate) var refreshRate
-    @Default(.buildType) var builtType
     @Default(.counterSelection) var counterSelection
 
     @State private var showGhAlert = false
@@ -33,17 +34,12 @@ struct PreferencesView: View {
 
         TabView {
             Form {
-                HStack(alignment: .center) {
-                    Text("Build Information:").frame(width: 120, alignment: .trailing)
-                    Picker("", selection: $builtType, content: {
-                        ForEach(BuildType.allCases) { bt in
-                            Text(bt.description)
-                        }
-                    })
-                    .labelsHidden()
-                    .pickerStyle(RadioGroupPickerStyle())
-                    .frame(width: 120)
-                }
+                Toggle("Action dashboard", isOn: $actionDashboard)
+                Toggle("Show CI diagnostics (head / test merge)", isOn: $showCIDiagnostics)
+                Text("Red badge: PRs awaiting your review. Person + count: your PRs requiring action. Each PR counts once per section.")
+                    .font(.footnote).foregroundColor(.secondary)
+                Text("Ready to merge requires 2 approvals, successful CI and no GitHub blockers. CI is always checked.")
+                    .font(.footnote).foregroundColor(.secondary)
 
                 HStack(alignment: .center) {
                     Text("Show Avatar:").frame(width: 120, alignment: .trailing)
@@ -81,6 +77,7 @@ struct PreferencesView: View {
             .tabItem{Text("General")}
 
             categoriesTab
+                .disabled(actionDashboard)
                 .tabItem{Text("Categories")}
 
             Form {

@@ -14,157 +14,112 @@ public class GitHubClient {
     
     @FromKeychain(.githubToken) var githubToken
     
-    /// Fetches open pull requests matching a category's search `filter`, wrapped in
-    /// the standard `is:open is:pr ... archived:false` query.
-    func getPulls(filter: String, completion:@escaping (([Edge]) -> Void)) -> Void {
-
-        if (githubToken == "") {
-            completion([Edge]())
-            return
-        }
-
-        let headers: HTTPHeaders = [
-            .authorization(bearerToken: githubToken),
-            .accept("application/json")
-        ]
-
-        let searchQuery = "is:open is:pr \(filter) archived:false"
-
-        let parameters = [
-            "query": buildGraphQlQuery(),
-            "variables": ["searchQuery": searchQuery]
-        ] as [String: Any]
-
-        AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
-            .validate(statusCode: 200..<300)
-            .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
-                switch response.result {
-                case .success(let prs):
-                    completion(prs.data.search.edges)
-                case .failure(let error):
-                    sendNotification(body: error.localizedDescription)
-                    completion([Edge]())
-                    print(error)
+    /// Paginate the search so menu counters are not limited to the first 30 PRs.
+    func getPulls(filter: String, completion: @escaping (Result<[Edge], Error>) -> Void) {
+        let headers: HTTPHeaders = [.authorization(bearerToken: githubToken), .accept("application/json")]
+        func fetch(after: String?, accumulated: [Edge]) {
+            var variables: [String: Any] = ["searchQuery": "is:open is:pr \(filter) archived:false draft:false"]
+            if let after = after { variables["after"] = after }
+            let parameters: [String: Any] = ["query": self.buildGraphQlQuery(), "variables": variables]
+            AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post,
+                       parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+                .validate(statusCode: 200..<300)
+                .responseDecodable(of: GraphQlSearchResp.self, decoder: GithubDecoder()) { response in
+                    switch response.result {
+                    case .failure(let error): completion(.failure(error))
+                    case .success(let result):
+                        if let error = result.errors?.first {
+                            completion(.failure(GitHubQueryError(message: error.message)))
+                            return
+                        }
+                        guard let search = result.data?.search else {
+                            completion(.failure(GitHubQueryError(message: "GitHub returned no data.")))
+                            return
+                        }
+                        // GitHub search cannot retrieve more than 1,000 results.
+                        guard search.issueCount <= 1000 else {
+                            completion(.failure(GitHubQueryError(message: "More than 1,000 PRs match this search.")))
+                            return
+                        }
+                        let pulls = accumulated + search.edges
+                        if search.pageInfo.hasNextPage {
+                            guard let cursor = search.pageInfo.endCursor, cursor != after else {
+                                completion(.failure(GitHubQueryError(message: "Incomplete GitHub search results.")))
+                                return
+                            }
+                            fetch(after: cursor, accumulated: pulls)
+                        } else {
+                            var seen = Set<URL>()
+                            completion(.success(pulls.filter { !$0.node.isDraft && seen.insert($0.node.url).inserted }))
+                        }
+                    }
                 }
-            }
+        }
+        fetch(after: nil, accumulated: [])
     }
 
     private func buildGraphQlQuery() -> String {
-        
-        var build = ""
-        
-        switch Defaults[.buildType] {
-        case .checks:
-            build = """
-        commits(last: 1) {
-            nodes {
-                commit {
-                    checkSuites(first: 10) {
-                        nodes {
-                            app {
-                                name
-                            }
-                            checkRuns(first: 10) {
-                                totalCount
-                                nodes {
-                                    name
-                                    conclusion
-                                    detailsUrl
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
         """
-        case .commitStatus:
-            build = """
-        commits(last: 1) {
-            nodes {
-                commit {
-                    statusCheckRollup {
-                        state
-                        contexts (first: 20) {
-                            nodes {
-                                ... on StatusContext {
-                                    context
-                                    description
-                                    state
-                                    targetUrl
-                                    description
-                                }
-                                ... on CheckRun {
-                                    name
-                                    conclusion
-                                    detailsUrl
-                                    title
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        """
-        default:
-            build = ""
-        }
-        
-        
-        
-        return """
-        query($searchQuery: String!) {
-            search(query: $searchQuery, type: ISSUE, first: 30) {
+        query($searchQuery: String!, $after: String) {
+            search(query: $searchQuery, type: ISSUE, first: 25, after: $after) {
                 issueCount
+                pageInfo { hasNextPage endCursor }
                 edges {
                     node {
                         ... on PullRequest {
-                            number
-                            createdAt
-                            updatedAt
-                            title
-                            headRefName
-                            url
-                            deletions
-                            additions
-                            isDraft
-                            isReadByViewer
-                            author {
-                                login
-                                avatarUrl
-                            }
-                            repository {
-                                name
-                            }
-                             labels(first: 5) {
-                                nodes {
-                                  name
-                                  color
-                                }
-                              }
-                            reviews(states: APPROVED, first: 10) {
+                            number createdAt updatedAt title url isDraft isReadByViewer viewerDidAuthor
+                            mergeable mergeStateStatus reviewDecision
+                            author { login avatarUrl }
+                            repository { name }
+                            labels(first: 5) { nodes { name color } }
+                            reviews: latestOpinionatedReviews(first: 100) {
                                 totalCount
-                                edges {
-                                    node {
-                                        author {
-                                            login
-                                        }
-                                        viewerDidAuthor
-                                    }
-                                }
+                                edges { node { author { login } viewerDidAuthor state submittedAt } }
                             }
-                            \(build)
+                            commentReviews: reviews(states: COMMENTED, last: 100) {
+                                totalCount
+                                edges { node { author { login } viewerDidAuthor state submittedAt } }
+                            }
+                            reviewThreads(first: 100) {
+                                totalCount
+                                nodes { isResolved }
+                            }
+                            potentialMergeCommit {
+                                    oid
+                                    statusCheckRollup {
+                                        state
+                                        contexts(first: 100) {
+                                            totalCount
+                                            nodes {
+                                                ... on StatusContext { context state targetUrl description }
+                                                ... on CheckRun { name status conclusion detailsUrl title }
+                                            }
+                                        }
+                                    }
+                            }
+                            commits(last: 1) {
+                                nodes { commit {
+                                    oid
+                                    statusCheckRollup {
+                                        state
+                                        contexts(first: 100) {
+                                            totalCount
+                                            nodes {
+                                                ... on StatusContext { context state targetUrl description }
+                                                ... on CheckRun { name status conclusion detailsUrl title }
+                                            }
+                                        }
+                                    }
+                                } }
+                            }
                         }
                     }
                 }
             }
         }
-        
-        
         """
     }
-    
+
     func getUser(completion: @escaping (User?) -> Void) {
         let headers: HTTPHeaders = [
             .authorization(bearerToken: githubToken),
@@ -222,4 +177,9 @@ class GithubDecoder: JSONDecoder {
         super.init()
         dateDecodingStrategy = .iso8601
     }
+}
+
+struct GitHubQueryError: LocalizedError {
+    let message: String
+    var errorDescription: String? { message }
 }
