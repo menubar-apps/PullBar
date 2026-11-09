@@ -371,7 +371,12 @@ extension AppDelegate {
         if !pull.node.detailsComplete { states.append("Review details incomplete — check GitHub") }
         if states.isEmpty {
             switch pull.node.mergeStateStatus {
-            case "BLOCKED": states.append("Blocked by GitHub requirements")
+            case "BLOCKED":
+                let waitingForReviews = pull.node.ciState == .passed
+                    && pull.node.reviewDecision == "REVIEW_REQUIRED"
+                states.append(waitingForReviews
+                    ? "Blocked by GitHub requirements - Waiting for reviews"
+                    : "Blocked by GitHub requirements")
             case "BEHIND": states.append("Branch needs updating")
             case "UNKNOWN": states.append("Mergeability pending")
             default: states.append("Waiting")
