@@ -9,6 +9,7 @@ import Foundation
 import Defaults
 
 extension Defaults.Keys {
+    static let actionDashboard = Key<Bool>("actionDashboard", default: true)
     static let githubApiBaseUrl = Key<String>("githubApiBaseUrl", default: "https://api.github.com")
 
     // Legacy keys, kept only so preferences from older versions can be migrated

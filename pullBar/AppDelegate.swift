@@ -24,6 +24,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var aboutWindow: NSWindow!
     
     var timer: Timer? = nil
+    private var refreshGeneration = 0
+    private var reviewURLs = Set<URL>()
+    private var displayedPRURLs = Set<URL>()
+
+    private func lastRead(for pull: Pull) -> Date? {
+        UserDefaults.standard.object(forKey: "reviewRead:" + pull.url.absoluteString) as? Date
+    }
+
+    private func reasons(for pull: Pull) -> [String] {
+        pull.actionReasons(lastRead: lastRead(for: pull))
+    }
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         migrateCategoriesIfNeeded()
@@ -66,7 +77,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc
     func openLink(_ sender: NSMenuItem) {
-        NSWorkspace.shared.open(sender.representedObject as! URL)
+        guard let url = sender.representedObject as? URL else { return }
+        if NSWorkspace.shared.open(url), displayedPRURLs.contains(url) {
+            UserDefaults.standard.set(Date(), forKey: "reviewRead:" + url.absoluteString)
+            refreshMenu()
+        }
     }
 
     func migrateCategoriesIfNeeded() {
@@ -140,107 +155,130 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension AppDelegate {
-    /// Keep the icon as a template image, while rendering the counter in full color.
-    func updateStatusCounter(_ count: Int) {
-        guard let button = statusBarItem.button else { return }
-        button.title = ""
-        button.attributedTitle = NSAttributedString(string: "")
-        button.setAccessibilityLabel("PullBar")
-        button.setAccessibilityValue(count > 0 ? "\(count) pull requests" : "")
-
-        guard count > 0 else { return }
-
+    /// Colored attachments leave the original menu bar icon adaptive to macOS.
+    private func counterBadge(_ count: Int, color: NSColor) -> NSAttributedString {
         let text = NSAttributedString(string: String(count), attributes: [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .bold),
             .foregroundColor: NSColor.white,
         ])
         let textSize = text.size()
-        let badgeSize = NSSize(width: max(18, ceil(textSize.width) + 10), height: 18)
-        let badge = NSImage(size: badgeSize, flipped: false) { rect in
-            NSColor.systemRed.setFill()
+        let size = NSSize(width: max(18, ceil(textSize.width) + 10), height: 18)
+        let badge = NSImage(size: size, flipped: false) { rect in
+            color.setFill()
             NSBezierPath(roundedRect: rect, xRadius: 9, yRadius: 9).fill()
-            text.draw(at: NSPoint(
-                x: (rect.width - textSize.width) / 2,
-                y: (rect.height - textSize.height) / 2
-            ))
+            text.draw(at: NSPoint(x: (rect.width - textSize.width) / 2, y: (rect.height - textSize.height) / 2))
             return true
         }
         badge.isTemplate = false
-
         let attachment = NSTextAttachment()
         attachment.image = badge
-        attachment.bounds = NSRect(x: 0, y: -4, width: badgeSize.width, height: badgeSize.height)
-        button.attributedTitle = NSAttributedString(attachment: attachment)
+        attachment.bounds = NSRect(x: 0, y: -4, width: size.width, height: size.height)
+        return NSAttributedString(attachment: attachment)
+    }
+
+    func updateStatusCounter(_ reviews: Int, actions: Int = 0) {
+        guard let button = statusBarItem.button else { return }
+        let title = NSMutableAttributedString(string: "")
+        if reviews > 0 { title.append(counterBadge(reviews, color: .systemRed)) }
+        if actions > 0 {
+            if reviews > 0 { title.append(NSAttributedString(string: " ")) }
+            title.append(counterBadge(actions, color: NSColor(srgbRed: 0.8, green: 0.35, blue: 0, alpha: 1)))
+        }
+        button.title = ""
+        button.attributedTitle = title
+        let summary = Defaults[.actionDashboard]
+            ? "\(reviews) PRs to review · \(actions) of your PRs need action"
+            : "\(reviews) pull requests"
+        button.toolTip = summary
+        button.setAccessibilityLabel("PullBar")
+        button.setAccessibilityValue(summary)
     }
 
     @objc
     func refreshMenu() {
-        NSLog("Refreshing menu")
-
-        if (githubToken == "") {
-            self.menu.removeAllItems()
+        refreshGeneration += 1
+        let generation = refreshGeneration
+        guard !githubToken.isEmpty else {
+            menu.removeAllItems()
+            reviewURLs.removeAll()
+            displayedPRURLs.removeAll()
             updateStatusCounter(0)
+            menu.addItem(withTitle: "Set your GitHub token in Preferences", action: nil, keyEquivalent: "")
             addMenuFooterItems()
             return
         }
-
-
-        let categories = Defaults[.categories].filter {
-            !$0.filter.trimmingCharacters(in: .whitespaces).isEmpty
-        }
-        let counter = Defaults[.counterSelection]
-
-        var pullsByCategory: [String: [Edge]] = [:]
-
+        let token = githubToken
+        let dashboard = Defaults[.actionDashboard]
+        let categories = dashboard ? [
+            SearchCategory(id: "reviews", name: "To review", filter: "review-requested:@me -author:@me"),
+            SearchCategory(id: "mine", name: "My PRs", filter: "author:@me"),
+        ] : Defaults[.categories].filter { !$0.filter.trimmingCharacters(in: .whitespaces).isEmpty }
+        var results: [String: [Edge]] = [:]
+        var fetchError: Error?
         let group = DispatchGroup()
-
+        if menu.items.isEmpty {
+            menu.addItem(withTitle: "Loading pull requests…", action: nil, keyEquivalent: "")
+            addMenuFooterItems()
+        }
         for category in categories {
             group.enter()
-            ghClient.getPulls(filter: category.filter) { pulls in
-                pullsByCategory[category.id, default: []].append(contentsOf: pulls)
+            ghClient.getPulls(filter: category.filter) { result in
+                switch result {
+                case .success(let pulls): results[category.id] = pulls
+                case .failure(let error): fetchError = error
+                }
                 group.leave()
             }
         }
-
         group.notify(queue: .main) {
-            // An empty NSMenu will not open, so hold the previous items until
-            // the new ones are ready to replace them.
+            guard generation == self.refreshGeneration, token == self.githubToken else { return }
+            if let error = fetchError {
+                // Keep the last successful list, but never present stale counters as current.
+                if let oldError = self.menu.item(withTag: 901) { self.menu.removeItem(oldError) }
+                let item = NSMenuItem(title: "Refresh failed — previous results may be outdated", action: nil, keyEquivalent: "")
+                item.tag = 901
+                item.toolTip = error.localizedDescription
+                self.menu.insertItem(item, at: 0)
+                self.statusBarItem.button?.attributedTitle = NSAttributedString(string: "!")
+                self.statusBarItem.button?.toolTip = "Refresh failed: " + error.localizedDescription
+                self.statusBarItem.button?.setAccessibilityValue("Refresh failed")
+                return
+            }
             self.menu.removeAllItems()
-
-            // Only categories that actually have pull requests are rendered.
-            let visibleCategories = categories.filter { !(pullsByCategory[$0.id] ?? []).isEmpty }
-
-            for (index, category) in visibleCategories.enumerated() {
-                let pulls = pullsByCategory[category.id] ?? []
-                let headerTitle = "\(category.displayName) (\(pulls.count))"
-
-                if category.asSubmenu {
-                    let parent = NSMenuItem(title: headerTitle, action: nil, keyEquivalent: "")
-                    let submenu = NSMenu()
-                    for pull in pulls {
-                        self.addMenuItems(pull: pull, to: submenu)
+            self.reviewURLs = Set((results["reviews"] ?? []).map { $0.node.url })
+            self.displayedPRURLs = Set(results.values.flatMap { $0 }.map { $0.node.url })
+            for category in categories {
+                var pulls = results[category.id] ?? []
+                if dashboard {
+                    pulls.sort {
+                        let left = !self.reasons(for: $0.node).isEmpty
+                        let right = !self.reasons(for: $1.node).isEmpty
+                        if category.id == "mine", left != right { return left }
+                        return $0.node.createdAt < $1.node.createdAt
                     }
-                    parent.submenu = submenu
+                }
+                guard dashboard || !pulls.isEmpty else { continue }
+                let header = "\(category.displayName) (\(pulls.count))"
+                let target: NSMenu
+                if category.asSubmenu {
+                    let parent = NSMenuItem(title: header, action: nil, keyEquivalent: "")
+                    target = NSMenu()
+                    parent.submenu = target
                     self.menu.addItem(parent)
                 } else {
-                    self.menu.addItem(NSMenuItem(title: headerTitle, action: nil, keyEquivalent: ""))
-                    for pull in pulls {
-                        self.addMenuItems(pull: pull, to: self.menu)
-                    }
+                    self.menu.addItem(withTitle: header, action: nil, keyEquivalent: "")
+                    target = self.menu
                 }
-
-                // Keep adjacent submenu categories grouped: no separator between
-                // two consecutive submenu items.
-                let next = index + 1 < visibleCategories.count ? visibleCategories[index + 1] : nil
-                let groupedWithNext = category.asSubmenu && (next?.asSubmenu ?? false)
-                if !groupedWithNext {
-                    self.menu.addItem(.separator())
-                }
+                if pulls.isEmpty { target.addItem(withTitle: "No open PRs", action: nil, keyEquivalent: "") }
+                for pull in pulls { self.addMenuItems(pull: pull, to: target) }
+                self.menu.addItem(.separator())
             }
-
-            let counterCount = (pullsByCategory[counter] ?? []).count
-            self.updateStatusCounter(counterCount)
-
+            if dashboard {
+                let actions = (results["mine"] ?? []).filter { !self.reasons(for: $0.node).isEmpty }.count
+                self.updateStatusCounter(self.reviewURLs.count, actions: actions)
+            } else {
+                self.updateStatusCounter((results[Defaults[.counterSelection]] ?? []).count)
+            }
             self.addMenuFooterItems()
         }
     }
@@ -314,20 +352,35 @@ extension AppDelegate {
             .appendIcon(iconName: "person")
             .appendString(string: pull.node.author?.login ?? User.ghost.login)
         
-        let approvalCount = pull.node.reviews.totalCount
-        let approvalColor = approvalCount > 0 ? NSColor(named: "green")! : NSColor.secondaryLabelColor
-        let approvedByMe = pull.node.reviews.edges.contains { $0.node.viewerDidAuthor }
-        let approvalLabel = approvalCount == 1 ? "1 approval" : "\(approvalCount) approvals"
-
-        issueItemTitle
-            .appendNewLine()
-            .appendIcon(iconName: "check-circle", color: approvalColor)
-        issueItemTitle.append(NSAttributedString(string: approvalLabel, attributes: [
-            .foregroundColor: approvalColor,
-            .font: NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold),
-        ]))
-        if approvedByMe {
-            issueItemTitle.appendString(string: " (you approved)")
+        let approvalCount = pull.node.approvalCount
+        let approvalColor: NSColor = approvalCount >= 2 ? .systemGreen : .secondaryLabelColor
+        issueItemTitle.appendNewLine().appendIcon(iconName: "check-circle", color: approvalColor)
+            .appendString(string: "\(approvalCount)/2 approvals", color: approvalColor)
+            .appendSeparator()
+        let ciColor: NSColor
+        switch pull.node.ciState {
+        case .passed: ciColor = .systemGreen
+        case .failed: ciColor = .systemRed
+        case .pending: ciColor = .systemOrange
+        case .missing, .unknown: ciColor = .secondaryLabelColor
+        }
+        issueItemTitle.appendString(string: pull.node.ciState.rawValue, color: ciColor)
+        var states = reasons(for: pull.node)
+        if reviewURLs.contains(pull.node.url) { states.insert("Your review requested", at: 0) }
+        if pull.node.isDraft { states.append("Draft") }
+        if !pull.node.detailsComplete { states.append("Review details incomplete — check GitHub") }
+        if states.isEmpty {
+            switch pull.node.mergeStateStatus {
+            case "BLOCKED": states.append("Blocked by GitHub requirements")
+            case "BEHIND": states.append("Branch needs updating")
+            case "UNKNOWN": states.append("Mergeability pending")
+            default: states.append("Waiting")
+            }
+        }
+        for start in stride(from: 0, to: states.count, by: 2) {
+            let end = min(start + 2, states.count)
+            issueItemTitle.appendNewLine()
+                .appendString(string: states[start..<end].joined(separator: " · "), color: .labelColor)
         }
 
         if !pull.node.labels.nodes.isEmpty && Defaults[.showLabels] {
@@ -341,97 +394,7 @@ extension AppDelegate {
             }
         }
         
-        issueItemTitle.appendNewLine()
-        
-        issueItemTitle
-            .appendString(string: "+" + String(pull.node.additions ?? 0), color: NSColor(named: "green")!)
-            .appendString(string: " -" + String(pull.node.deletions ?? 0), color: NSColor(named: "red")!)
-            .appendSeparator()
-            .appendIcon(iconName: "calendar")
-            .appendString(string: pull.node.createdAt.getElapsedInterval())
-        
-        if let commits = pull.node.commits {
-            
-            if let checkSuites = commits.nodes[0].commit.checkSuites {
-                
-                if checkSuites.nodes.count > 0 {
-                    issueItem.submenu = NSMenu()
-                    issueItemTitle
-                        .appendSeparator()
-                        .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
-                }
-                for checkSuite in checkSuites.nodes {
-                    
-                    if checkSuite.checkRuns.nodes.count > 0 {
-                        issueItem.submenu?.addItem(withTitle: checkSuite.app?.name ?? "empty", action: nil, keyEquivalent: "")
-                    }
-                    for check in checkSuite.checkRuns.nodes {
-                        
-                        let buildItem = NSMenuItem(title: check.name, action: #selector(self.openLink), keyEquivalent: "")
-                        buildItem.representedObject = check.detailsUrl
-                        buildItem.toolTip = check.conclusion
-                        if check.conclusion  == "SUCCESS" {
-                            buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
-                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
-                        } else if check.conclusion  == "FAILURE" {
-                            buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
-                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
-                        } else if check.conclusion  == "ACTION_REQUIRED" {
-                            buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
-                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
-                        } else {
-                            buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
-                            issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
-                        }
-                        
-                        issueItem.submenu?.addItem(buildItem)
-                    }
-                }
-            }
-            
-            else if let statusCheckRollup = commits.nodes[0].commit.statusCheckRollup {
-                
-                if statusCheckRollup.contexts.nodes.count > 0 {
-                    issueItem.submenu = NSMenu()
-                    issueItemTitle
-                        .appendSeparator()
-                        .appendIcon(iconName: "checklist", color: NSColor.secondaryLabelColor)
-                }
-                
-                for check in statusCheckRollup.contexts.nodes {
-                    let itemTitle = NSMutableAttributedString()
-                    itemTitle.appendString(string: check.name ?? check.context ?? "<empty>", color: NSColor(.primary))
-                    itemTitle.appendNewLine()
-                        .appendString(string: check.description ?? check.title ?? "<empty>", color: NSColor(.secondary))
-                    
-                    let buildItem = NSMenuItem(title: "", action: #selector(AppDelegate.openLink), keyEquivalent: "")
-                    buildItem.attributedTitle = itemTitle
-                    
-                    buildItem.representedObject = check.detailsUrl ?? URL.init(string:check.targetUrl ?? "")
-                    
-                    buildItem.toolTip = check.conclusion ?? check.state ?? ""
-                    
-                    let status = check.conclusion ?? check.state ?? ""
-                    switch status {
-                    case "SUCCESS":
-                        buildItem.image = NSImage(named: "check-circle-fill")!.tint(color: NSColor(named: "green")!)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "green")!)
-                    case "FAILURE":
-                        buildItem.image = NSImage(named: "x-circle-fill")!.tint(color: NSColor(named: "red")!)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "red")!)
-                    case "PENDING":
-                        buildItem.image = NSImage(named: "issue-draft")!.tint(color: NSColor(named: "yellow")!)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor(named: "yellow")!)
-                    default:
-                        buildItem.image = NSImage(named: "question")!.tint(color: NSColor.gray)
-                        issueItemTitle.appendIcon(iconName: "dot-fill", color: NSColor.gray)
-                        
-                    }
-                    issueItem.submenu?.addItem(buildItem)
-                }
-            }
-        }
-        
+        // Keep the PR itself clickable. CI details are available in GitHub.
         issueItem.attributedTitle = issueItemTitle
         if pull.node.title.count > 50 {
             issueItem.toolTip = pull.node.title
