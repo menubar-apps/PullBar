@@ -447,9 +447,16 @@ extension AppDelegate {
             }
         }
         
+        if Defaults[.showCIDiagnostics] {
+            for line in pull.node.ciDiagnosticLines(checkLimit: 2) {
+                issueItemTitle.appendNewLine().appendString(string: line, color: .secondaryLabelColor, fontSize: 11)
+            }
+        }
         // Keep the PR itself clickable. CI details are available in GitHub.
         issueItem.attributedTitle = issueItemTitle
-        if pull.node.title.count > 50 {
+        if Defaults[.showCIDiagnostics] {
+            issueItem.toolTip = pull.node.title + "\n" + pull.node.ciDiagnosticLines().joined(separator: "\n")
+        } else if pull.node.title.count > 50 {
             issueItem.toolTip = pull.node.title
         }
         issueItem.representedObject = pull.node.url

@@ -84,8 +84,22 @@ public class GitHubClient {
                                 totalCount
                                 nodes { isResolved }
                             }
+                            potentialMergeCommit {
+                                    oid
+                                    statusCheckRollup {
+                                        state
+                                        contexts(first: 100) {
+                                            totalCount
+                                            nodes {
+                                                ... on StatusContext { context state targetUrl description }
+                                                ... on CheckRun { name status conclusion detailsUrl title }
+                                            }
+                                        }
+                                    }
+                            }
                             commits(last: 1) {
                                 nodes { commit {
+                                    oid
                                     statusCheckRollup {
                                         state
                                         contexts(first: 100) {

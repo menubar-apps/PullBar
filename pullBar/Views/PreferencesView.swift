@@ -20,6 +20,7 @@ struct PreferencesView: View {
 
     @Default(.showAvatar) var showAvatar
     @Default(.showLabels) var showLabels
+    @Default(.showCIDiagnostics) var showCIDiagnostics
 
     @Default(.refreshRate) var refreshRate
     @Default(.counterSelection) var counterSelection
@@ -34,6 +35,7 @@ struct PreferencesView: View {
         TabView {
             Form {
                 Toggle("Action dashboard", isOn: $actionDashboard)
+                Toggle("Show CI diagnostics (head / test merge)", isOn: $showCIDiagnostics)
                 Text("Red badge: PRs awaiting your review. Person + count: your PRs requiring action. Each PR counts once per section.")
                     .font(.footnote).foregroundColor(.secondary)
                 Text("Ready to merge requires 2 approvals, successful CI and no GitHub blockers. CI is always checked.")

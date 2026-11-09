@@ -136,6 +136,21 @@ struct ActionRulesTests {
         expect([pr].filter { !$0.actionReasons(lastRead: nil).isEmpty }.count == 1, "Count PRs, not reasons")
         let error = try decoder.decode(GraphQlSearchResp.self, from: Foundation.Data("{\"errors\":[{\"message\":\"Denied\"}]}".utf8))
         expect(error.data == nil && error.errors?.first?.message == "Denied", "GraphQL failures are not empty results")
+        pr = base
+        expect(pr.ciDiagnosticLines().contains("Test merge: commit unavailable"), "Unavailable merge commit is explicit")
+        pr.potentialMergeCommit = pr.commits!.nodes[0].commit
+        pr.potentialMergeCommit!.oid = "abcdef123456"
+        pr.potentialMergeCommit!.statusCheckRollup!.state = "PENDING"
+        pr.potentialMergeCommit!.statusCheckRollup!.contexts.nodes[0].status = "IN_PROGRESS"
+        pr.potentialMergeCommit!.statusCheckRollup!.contexts.nodes[0].conclusion = nil
+        expect(pr.ciDiagnosticLines().contains { $0.contains("Test merge abcdef1: PENDING") }, "Both commit sources are reported independently")
+        expect(pr.ciDiagnosticLines().contains { $0.contains("IN_PROGRESS / null") }, "Pending conclusion is not treated as success")
+        expect(pr.readyToMerge == base.readyToMerge, "Diagnostics do not alter existing merge rules")
+        pr.potentialMergeCommit!.statusCheckRollup = nil
+        expect(pr.ciDiagnosticLines().contains { $0.contains("no check data (null)") }, "Null rollup differs from zero checks")
+        pr = base
+        pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.totalCount = 101
+        expect(pr.ciDiagnosticLines().contains { $0.contains("additional checks not fetched") }, "Truncated data is explicitly flagged")
         print("Passed \(checks) action-rule checks")
     }
 }
