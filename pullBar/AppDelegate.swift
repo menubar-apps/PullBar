@@ -24,6 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var aboutWindow: NSWindow!
     
     var timer: Timer? = nil
+    private var loadingIndicator: NSProgressIndicator?
     private var refreshGeneration = 0
     private var reviewURLs = Set<URL>()
     private var displayedPRURLs = Set<URL>()
@@ -177,6 +178,7 @@ extension AppDelegate {
     }
 
     func updateStatusCounter(_ reviews: Int, actions: Int = 0) {
+        stopStatusLoading()
         guard let button = statusBarItem.button else { return }
         let title = NSMutableAttributedString(string: "")
         if reviews > 0 { title.append(counterBadge(reviews, color: .systemRed)) }
@@ -198,6 +200,38 @@ extension AppDelegate {
         button.setAccessibilityValue(summary)
     }
 
+    private func startStatusLoading() {
+        guard let button = statusBarItem.button else { return }
+        stopStatusLoading()
+        button.title = ""
+        button.attributedTitle = NSAttributedString(string: "    ")
+        statusBarItem.length = 48
+        button.toolTip = "Refreshing pull requests…"
+        button.setAccessibilityValue("Loading pull requests")
+        let indicator = StatusLoadingIndicator()
+        indicator.style = .spinning
+        indicator.controlSize = .small
+        indicator.isIndeterminate = true
+        indicator.isDisplayedWhenStopped = false
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        button.addSubview(indicator)
+        NSLayoutConstraint.activate([
+            indicator.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -5),
+            indicator.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+            indicator.widthAnchor.constraint(equalToConstant: 16),
+            indicator.heightAnchor.constraint(equalToConstant: 16),
+        ])
+        indicator.startAnimation(nil)
+        loadingIndicator = indicator
+    }
+
+    private func stopStatusLoading() {
+        loadingIndicator?.stopAnimation(nil)
+        loadingIndicator?.removeFromSuperview()
+        loadingIndicator = nil
+        statusBarItem.length = NSStatusItem.variableLength
+    }
+
     @objc
     func refreshMenu() {
         refreshGeneration += 1
@@ -212,6 +246,7 @@ extension AppDelegate {
             return
         }
         let token = githubToken
+        startStatusLoading()
         let dashboard = Defaults[.actionDashboard]
         let categories = dashboard ? [
             SearchCategory(id: "reviews", name: "To review", filter: "review-requested:@me -author:@me"),
@@ -235,7 +270,12 @@ extension AppDelegate {
             }
         }
         group.notify(queue: .main) {
-            guard generation == self.refreshGeneration, token == self.githubToken else { return }
+            guard generation == self.refreshGeneration else { return }
+            self.stopStatusLoading()
+            guard token == self.githubToken else {
+                self.refreshMenu()
+                return
+            }
             if let error = fetchError {
                 // Keep the last successful list, but never present stale counters as current.
                 if let oldError = self.menu.item(withTag: 901) { self.menu.removeItem(oldError) }
@@ -354,6 +394,8 @@ extension AppDelegate {
             .appendSeparator()
             .appendIcon(iconName: "person")
             .appendString(string: pull.node.author?.login ?? User.ghost.login)
+            .appendSeparator()
+            .appendString(string: pull.node.createdAt.creationAgeLabel())
         
         let approvalCount = pull.node.approvalCount
         let approvalColor: NSColor = approvalCount >= 2 ? .systemGreen : .secondaryLabelColor
@@ -556,4 +598,9 @@ extension AppDelegate {
         newImage.unlockFocus()
         return newImage
     }
+}
+
+/// Let clicks on the spinner continue to open the status item's menu.
+private final class StatusLoadingIndicator: NSProgressIndicator {
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }
