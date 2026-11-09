@@ -8,6 +8,11 @@
 import Foundation
 
 extension Date {
+    func creationAgeLabel(now: Date = Date()) -> String {
+        let days = max(0, Int(now.timeIntervalSince(self) / 86_400))
+        if days == 0 { return "Created <1 day ago" }
+        return "Created \(days) day\(days == 1 ? "" : "s") ago"
+    }
     
     func getElapsedInterval() -> String {
         
