@@ -29,12 +29,13 @@ If you liked the PullBar, check the [PullBar Pro](https://menubar-apps.github.io
 # Action dashboard (this fork)
 
 Enabled by default in Preferences → General. The menu shows **To review** and
-**My PRs**, with actionable PRs first. Disable **Action dashboard** to use the
+**My PRs**, with actionable PRs first. Draft PRs are excluded from all sections and counters.
+Your ready-to-merge PRs have a green check beside the title and a green status. Disable **Action dashboard** to use the
 existing custom categories and single category counter again; saved categories
 are preserved.
 
 - **Red badge:** open PRs requesting your review (excluding your own PRs).
-- **Orange badge:** your open PRs with failing CI, requested changes, unresolved
+- **Soft red badge (25% opacity):** your open PRs with failing CI, requested changes, unresolved
   review discussions, new review comments, conflicts, or ready to merge.
 - Each PR counts once in its section, even when it has several action reasons.
   Zero badges are hidden; hover over the icon for the meaning of both counts.

@@ -156,10 +156,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate {
     /// Colored attachments leave the original menu bar icon adaptive to macOS.
-    private func counterBadge(_ count: Int, color: NSColor) -> NSAttributedString {
+    private func counterBadge(_ count: Int, color: NSColor, textColor: NSColor = .white) -> NSAttributedString {
         let text = NSAttributedString(string: String(count), attributes: [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .bold),
-            .foregroundColor: NSColor.white,
+            .foregroundColor: textColor,
         ])
         let textSize = text.size()
         let size = NSSize(width: max(18, ceil(textSize.width) + 10), height: 18)
@@ -182,7 +182,9 @@ extension AppDelegate {
         if reviews > 0 { title.append(counterBadge(reviews, color: .systemRed)) }
         if actions > 0 {
             if reviews > 0 { title.append(NSAttributedString(string: " ")) }
-            title.append(counterBadge(actions, color: NSColor(srgbRed: 0.8, green: 0.35, blue: 0, alpha: 1)))
+            // A translucent red background distinguishes personal actions from
+            // urgent reviews. Keep the text opaque and adaptive for readability.
+            title.append(counterBadge(actions, color: NSColor.systemRed.withAlphaComponent(0.25), textColor: .labelColor))
         }
         button.title = ""
         button.attributedTitle = title
@@ -333,9 +335,8 @@ extension AppDelegate {
         let issueItemTitle = NSMutableAttributedString(string: "")
             .appendString(string: pull.node.isReadByViewer ? "" : "⏺ ", color: .systemBlue)
         
-        if (pull.node.isDraft) {
-            issueItemTitle
-                .appendIcon(iconName: "git-draft-pull-request", color: NSColor.secondaryLabelColor)
+        if pull.node.viewerDidAuthor && pull.node.readyToMerge {
+            issueItemTitle.appendIcon(iconName: "check-circle-fill", color: .systemGreen)
         }
         
         issueItemTitle
@@ -367,7 +368,6 @@ extension AppDelegate {
         issueItemTitle.appendString(string: pull.node.ciState.rawValue, color: ciColor)
         var states = reasons(for: pull.node)
         if reviewURLs.contains(pull.node.url) { states.insert("Your review requested", at: 0) }
-        if pull.node.isDraft { states.append("Draft") }
         if !pull.node.detailsComplete { states.append("Review details incomplete — check GitHub") }
         if states.isEmpty {
             switch pull.node.mergeStateStatus {
@@ -380,7 +380,11 @@ extension AppDelegate {
         for start in stride(from: 0, to: states.count, by: 2) {
             let end = min(start + 2, states.count)
             issueItemTitle.appendNewLine()
-                .appendString(string: states[start..<end].joined(separator: " · "), color: .labelColor)
+            for index in start..<end {
+                if index > start { issueItemTitle.appendString(string: " · ") }
+                let isReady = pull.node.viewerDidAuthor && states[index] == "Ready to merge"
+                issueItemTitle.appendString(string: states[index], color: isReady ? .systemGreen : .labelColor)
+            }
         }
 
         if !pull.node.labels.nodes.isEmpty && Defaults[.showLabels] {
