@@ -20,7 +20,7 @@ struct ActionRulesTests {
               "url": "https://github.com/example/repo/pull/1", "number": 1,
               "title": "Example", "createdAt": "2026-11-01T12:00:00Z",
               "updatedAt": "2026-11-08T12:00:00Z", "isDraft": false,
-              "isReadByViewer": false, "author": {"login": "me"},
+              "isReadByViewer": false, "viewerDidAuthor": true, "author": {"login": "me"},
               "repository": {"name": "example/repo"}, "labels": {"nodes": []},
               "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN", "reviewDecision": "APPROVED",
               "reviews": {"totalCount": 2, "edges": [

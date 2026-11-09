@@ -68,6 +68,7 @@ struct Pull: Codable {
     var labels: Nodes<Label>
     var isDraft: Bool
     var isReadByViewer: Bool
+    var viewerDidAuthor: Bool
     var mergeable: String
     var mergeStateStatus: String
     var reviewDecision: String?
@@ -88,7 +89,7 @@ struct Pull: Codable {
         case commits
         case labels
         case isDraft
-        case isReadByViewer
+        case isReadByViewer, viewerDidAuthor
         case mergeable, mergeStateStatus, reviewDecision, reviewThreads, commentReviews
     }
 }
