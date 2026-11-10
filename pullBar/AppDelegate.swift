@@ -179,14 +179,27 @@ extension AppDelegate {
         return NSAttributedString(attachment: attachment)
     }
 
-    func updateStatusCounter(_ reviews: Int, actions: Int = 0) {
+    private func personalActionIcon(readyToMerge: Bool) -> NSAttributedString {
+        let symbol = NSImage(systemSymbolName: readyToMerge ? "person.fill" : "person",
+                             accessibilityDescription: nil)
+        symbol?.size = NSSize(width: 16, height: 16)
+        let image = symbol?.tint(color: readyToMerge ? .systemGreen : .labelColor)
+        image?.isTemplate = false
+        let attachment = NSTextAttachment()
+        attachment.image = image
+        attachment.bounds = NSRect(x: 0, y: -3, width: 16, height: 16)
+        return NSAttributedString(attachment: attachment)
+    }
+
+    func updateStatusCounter(_ reviews: Int, actions: Int = 0, readyToMergeCount: Int = 0) {
         stopStatusLoading()
         guard let button = statusBarItem.button else { return }
         let title = NSMutableAttributedString(string: "")
         if reviews > 0 { title.append(counterBadge(reviews, color: .systemRed)) }
         if actions > 0 {
             if reviews > 0 { title.append(NSAttributedString(string: " ")) }
-            title.appendIcon(iconName: "person", color: .labelColor)
+            title.append(personalActionIcon(readyToMerge: readyToMergeCount > 0))
+            title.append(NSAttributedString(string: " "))
             title.append(NSAttributedString(string: String(actions), attributes: [
                 .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold),
                 .foregroundColor: NSColor.labelColor,
@@ -195,7 +208,7 @@ extension AppDelegate {
         button.title = ""
         button.attributedTitle = title
         let summary = Defaults[.actionDashboard]
-            ? "\(reviews) PRs to review · \(actions) of your PRs need action"
+            ? "\(reviews) PRs to review · \(actions) of your PRs need action · \(readyToMergeCount) ready to merge"
             : "\(reviews) pull requests"
         button.toolTip = summary
         button.setAccessibilityLabel("PullBar")
@@ -324,8 +337,10 @@ extension AppDelegate {
                 updatedMenu.addItem(.separator())
             }
             if dashboard {
-                let actions = (results["mine"] ?? []).filter { !self.reasons(for: $0.node).isEmpty }.count
-                self.updateStatusCounter(self.reviewURLs.count, actions: actions)
+                let ownPulls = results["mine"] ?? []
+                let actions = ownPulls.filter { !self.reasons(for: $0.node).isEmpty }.count
+                let readyToMerge = ownPulls.filter { $0.node.readyToMerge }.count
+                self.updateStatusCounter(self.reviewURLs.count, actions: actions, readyToMergeCount: readyToMerge)
             } else {
                 self.updateStatusCounter((results[Defaults[.counterSelection]] ?? []).count)
             }
