@@ -292,6 +292,8 @@ struct ContextNode: Codable, Hashable {
     var detailsUrl: URL?
     var targetUrl: String?
     var status: String?
+    var startedAt: Date?
+    var completedAt: Date?
     
     enum CodingKeys: String, CodingKey {
         case name
@@ -301,7 +303,7 @@ struct ContextNode: Codable, Hashable {
         case title
         case description
         case detailsUrl
-        case targetUrl, status
+        case targetUrl, status, startedAt, completedAt
     }
 }
 
@@ -369,9 +371,19 @@ extension Pull {
     }
     var ciSummary: String {
         if ciState == .failed && hasRunningChecks {
-            return "CI failed · other checks running"
+            return "CI failed · other checks running — " + runningDurationLabel()
         }
+        if ciState == .running { return ciState.rawValue + " — " + runningDurationLabel() }
         return ciState.rawValue
+    }
+    func runningDurationLabel(now: Date = Date()) -> String {
+        let running = (commits?.nodes.first?.commit.statusCheckRollup?.contexts.nodes ?? [])
+            .filter { $0.status == "IN_PROGRESS" }
+        let durations = running.compactMap { $0.executionDuration(now: now) }
+        guard let longest = durations.max() else { return "duration unavailable" }
+        let prefix = running.count > 1
+            ? (durations.count == running.count ? "longest " : "longest known ") : ""
+        return prefix + ContextNode.formatDuration(longest)
     }
     var readyToMerge: Bool {
         !isDraft && detailsComplete && approvalCount >= 2 && ciState == .passed
@@ -401,7 +413,7 @@ extension Pull {
 
 // Diagnostic output deliberately does not participate in action / merge rules.
 extension Pull {
-    func ciDiagnosticLines(checkLimit: Int? = nil) -> [String] {
+    func ciDiagnosticLines(checkLimit: Int? = nil, now: Date = Date()) -> [String] {
         var lines = ["GitHub: merge=\(mergeStateStatus) · reviews=\(reviewDecision ?? "null")"]
         for (source, commit) in [("Head", commits?.nodes.first?.commit), ("Test merge", potentialMergeCommit)] {
             guard let commit = commit else {
@@ -427,13 +439,45 @@ extension Pull {
                 let displayName = checkLimit == nil ? name : String(name.prefix(35))
                 if check.status != nil || check.name != nil {
                     lines.append("  \(displayName): \(check.status ?? "null") / \(check.conclusion ?? "null")")
+                    let duration = check.executionDuration(now: now).map(ContextNode.formatDuration) ?? "unavailable"
+                    lines.append("    Duration: \(duration)")
+                    if checkLimit == nil {
+                        let formatter = ISO8601DateFormatter()
+                        let started = check.startedAt.map { formatter.string(from: $0) } ?? "null"
+                        let completed = check.completedAt.map { formatter.string(from: $0) } ?? "null"
+                        lines.append("    startedAt=\(started) · completedAt=\(completed)")
+                    }
                 } else {
                     lines.append("  \(displayName): status=\(check.state ?? "null")")
+                    lines.append("    Duration unavailable: legacy commit status")
                 }
             }
             if shown.count < nodes.count { lines.append("  +\(nodes.count - shown.count) checks — hover for details") }
             if nodes.count < rollup.contexts.totalCount { lines.append("  Incomplete: additional checks not fetched") }
         }
         return lines
+    }
+}
+
+extension ContextNode {
+    func executionDuration(now: Date = Date()) -> TimeInterval? {
+        guard let started = startedAt else { return nil }
+        let end: Date
+        switch status {
+        case "IN_PROGRESS": end = now
+        case "COMPLETED":
+            guard let completed = completedAt else { return nil }
+            end = completed
+        default: return nil // Queued checks have not started executing.
+        }
+        let elapsed = end.timeIntervalSince(started)
+        return elapsed >= 0 ? elapsed : nil
+    }
+
+    static func formatDuration(_ seconds: TimeInterval) -> String {
+        let minutes = Int(seconds / 60)
+        if minutes == 0 { return "<1 min" }
+        if minutes < 60 { return "\(minutes) min" }
+        return "\(minutes / 60) h \(minutes % 60) min"
     }
 }
