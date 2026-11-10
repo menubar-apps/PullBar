@@ -25,6 +25,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     var timer: Timer? = nil
     private var loadingIndicator: NSProgressIndicator?
+    private weak var refreshButton: NSButton?
+    private let refreshItemTag = 902
     private var refreshGeneration = 0
     private var reviewURLs = Set<URL>()
     private var displayedPRURLs = Set<URL>()
@@ -223,12 +225,16 @@ extension AppDelegate {
         ])
         indicator.startAnimation(nil)
         loadingIndicator = indicator
+        refreshButton?.title = "Refreshing…"
+        refreshButton?.isEnabled = false
     }
 
     private func stopStatusLoading() {
         loadingIndicator?.stopAnimation(nil)
         loadingIndicator?.removeFromSuperview()
         loadingIndicator = nil
+        refreshButton?.title = "Refresh"
+        refreshButton?.isEnabled = true
         statusBarItem.length = NSStatusItem.variableLength
     }
 
@@ -288,7 +294,7 @@ extension AppDelegate {
                 self.statusBarItem.button?.setAccessibilityValue("Refresh failed")
                 return
             }
-            self.menu.removeAllItems()
+            let updatedMenu = NSMenu()
             self.reviewURLs = Set((results["reviews"] ?? []).map { $0.node.url })
             self.displayedPRURLs = Set(results.values.flatMap { $0 }.map { $0.node.url })
             for category in categories {
@@ -308,14 +314,14 @@ extension AppDelegate {
                     let parent = NSMenuItem(title: header, action: nil, keyEquivalent: "")
                     target = NSMenu()
                     parent.submenu = target
-                    self.menu.addItem(parent)
+                    updatedMenu.addItem(parent)
                 } else {
-                    self.menu.addItem(withTitle: header, action: nil, keyEquivalent: "")
-                    target = self.menu
+                    updatedMenu.addItem(withTitle: header, action: nil, keyEquivalent: "")
+                    target = updatedMenu
                 }
                 if pulls.isEmpty { target.addItem(withTitle: "No open PRs", action: nil, keyEquivalent: "") }
                 for pull in pulls { self.addMenuItems(pull: pull, to: target) }
-                self.menu.addItem(.separator())
+                updatedMenu.addItem(.separator())
             }
             if dashboard {
                 let actions = (results["mine"] ?? []).filter { !self.reasons(for: $0.node).isEmpty }.count
@@ -323,7 +329,15 @@ extension AppDelegate {
             } else {
                 self.updateStatusCounter((results[Defaults[.counterSelection]] ?? []).count)
             }
-            self.addMenuFooterItems()
+            // Keep the footer and its Refresh view alive throughout menu tracking.
+            // Insert the new rows before removing old ones so the menu never empties.
+            let oldRows = Array(self.menu.items.prefix { $0.tag != self.refreshItemTag })
+            for (index, item) in updatedMenu.items.enumerated() {
+                updatedMenu.removeItem(item)
+                self.menu.insertItem(item, at: index)
+            }
+            for item in oldRows { self.menu.removeItem(item) }
+            self.menu.update()
         }
     }
 
@@ -465,7 +479,23 @@ extension AppDelegate {
     }
     
     func addMenuFooterItems() {
-        self.menu.addItem(withTitle: "Refresh", action: #selector(self.refreshMenu), keyEquivalent: "")
+        let refreshItem = NSMenuItem(title: "Refresh", action: #selector(self.refreshMenu), keyEquivalent: "")
+        refreshItem.target = self
+        refreshItem.tag = refreshItemTag
+        // A button in a custom menu view receives clicks without ending tracking.
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 28))
+        let button = NSButton(title: loadingIndicator == nil ? "Refresh" : "Refreshing…",
+                              target: self, action: #selector(self.refreshMenu))
+        button.frame = NSRect(x: 14, y: 2, width: 172, height: 24)
+        button.autoresizingMask = [.width]
+        button.isBordered = false
+        button.alignment = .left
+        button.font = NSFont.menuFont(ofSize: 0)
+        button.isEnabled = loadingIndicator == nil
+        container.addSubview(button)
+        refreshItem.view = container
+        refreshButton = button
+        self.menu.addItem(refreshItem)
         self.menu.addItem(.separator())
         self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: "")
         // Remove for app store release

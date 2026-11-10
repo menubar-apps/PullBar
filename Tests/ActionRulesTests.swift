@@ -151,6 +151,30 @@ struct ActionRulesTests {
         pr = base
         pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.totalCount = 101
         expect(pr.ciDiagnosticLines().contains { $0.contains("additional checks not fetched") }, "Truncated data is explicitly flagged")
+        let clock = Date(timeIntervalSince1970: 1_700_000_000)
+        pr = base
+        pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0].status = "IN_PROGRESS"
+        pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0].startedAt = clock.addingTimeInterval(-750)
+        expect(pr.runningDurationLabel(now: clock) == "12 min", "Running elapsed time comes from startedAt")
+        var timed = pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0]
+        timed.startedAt = clock.addingTimeInterval(-3900)
+        expect(timed.executionDuration(now: clock).map(ContextNode.formatDuration) == "1 h 5 min", "Long durations include hours")
+        timed.status = "COMPLETED"
+        timed.completedAt = clock.addingTimeInterval(-3000)
+        expect(timed.executionDuration(now: clock) == 900, "Completed duration uses completedAt, not now")
+        timed.completedAt = nil
+        expect(timed.executionDuration(now: clock) == nil, "Missing completion time is unknown")
+        timed.status = "QUEUED"
+        expect(timed.executionDuration(now: clock) == nil, "Queue time is not execution time")
+        timed.status = "IN_PROGRESS"
+        timed.startedAt = clock.addingTimeInterval(10)
+        expect(timed.executionDuration(now: clock) == nil, "Future timestamps must not produce negative durations")
+        timed.startedAt = nil
+        pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes.append(timed)
+        expect(pr.runningDurationLabel(now: clock) == "longest known 12 min", "Partial timing coverage is explicit")
+        pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0].startedAt = nil
+        expect(pr.runningDurationLabel(now: clock) == "duration unavailable", "Missing starts must not invent durations")
+        expect(ContextNode.formatDuration(30) == "<1 min", "Subminute elapsed time is explicit")
         print("Passed \(checks) action-rule checks")
     }
 }

@@ -92,7 +92,7 @@ public class GitHubClient {
                                             totalCount
                                             nodes {
                                                 ... on StatusContext { context state targetUrl description }
-                                                ... on CheckRun { name status conclusion detailsUrl title }
+                                                ... on CheckRun { name status conclusion detailsUrl title startedAt completedAt }
                                             }
                                         }
                                     }
@@ -106,7 +106,7 @@ public class GitHubClient {
                                             totalCount
                                             nodes {
                                                 ... on StatusContext { context state targetUrl description }
-                                                ... on CheckRun { name status conclusion detailsUrl title }
+                                                ... on CheckRun { name status conclusion detailsUrl title startedAt completedAt }
                                             }
                                         }
                                     }
