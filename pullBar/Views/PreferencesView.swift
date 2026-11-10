@@ -35,10 +35,14 @@ struct PreferencesView: View {
         TabView {
             Form {
                 Toggle("Action dashboard", isOn: $actionDashboard)
-                Toggle("Show CI diagnostics (head / test merge)", isOn: $showCIDiagnostics)
                 Text("Red badge: PRs awaiting your review. Person + count: your PRs requiring action. Each PR counts once per section.")
                     .font(.footnote).foregroundColor(.secondary)
                 Text("Ready to merge requires 2 approvals, successful CI and no GitHub blockers. CI is always checked.")
+                    .font(.footnote).foregroundColor(.secondary)
+
+                Toggle("Show debug information", isOn: $showCIDiagnostics)
+                    .help("Show raw CI data for the head and test merge commits in PR rows and tooltips. Applied when Preferences closes.")
+                Text("Display technical CI details under each PR and in its tooltip.")
                     .font(.footnote).foregroundColor(.secondary)
 
                 HStack(alignment: .center) {
