@@ -18,7 +18,7 @@ public class GitHubClient {
     func getPulls(filter: String, completion: @escaping (Result<[Edge], Error>) -> Void) {
         let headers: HTTPHeaders = [.authorization(bearerToken: githubToken), .accept("application/json")]
         func fetch(after: String?, accumulated: [Edge]) {
-            var variables: [String: Any] = ["searchQuery": "is:open is:pr \(filter) archived:false draft:false"]
+            var variables: [String: Any] = ["searchQuery": "is:open is:pr \(filter) archived:false"]
             if let after = after { variables["after"] = after }
             let parameters: [String: Any] = ["query": self.buildGraphQlQuery(), "variables": variables]
             AF.request(Defaults[.githubApiBaseUrl] + "/graphql", method: .post,
@@ -50,7 +50,7 @@ public class GitHubClient {
                             fetch(after: cursor, accumulated: pulls)
                         } else {
                             var seen = Set<URL>()
-                            completion(.success(pulls.filter { !$0.node.isDraft && seen.insert($0.node.url).inserted }))
+                            completion(.success(pulls.filter { seen.insert($0.node.url).inserted }))
                         }
                     }
                 }
