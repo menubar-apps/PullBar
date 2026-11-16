@@ -9,6 +9,9 @@ import Foundation
 import Defaults
 
 extension Defaults.Keys {
+    static let showRecentMerges = Key<Bool>("showRecentMerges", default: true)
+    static let recentMergeRepositories = Key<String>("recentMergeRepositories", default: "")
+    static let recentMergeLimit = Key<Int>("recentMergeLimit", default: 5)
     static let showCIDiagnostics = Key<Bool>("showCIDiagnostics", default: false)
     static let actionDashboard = Key<Bool>("actionDashboard", default: true)
     static let githubApiBaseUrl = Key<String>("githubApiBaseUrl", default: "https://api.github.com")

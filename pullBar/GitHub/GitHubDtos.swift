@@ -515,3 +515,55 @@ extension ContextNode {
         return "\(minutes / 60) h \(minutes % 60) min"
     }
 }
+
+struct RecentMerge: Codable {
+    var title: String
+    var url: URL
+    var number: Int
+    var mergedAt: Date
+    var updatedAt: Date
+    var repository: RecentMergeRepository
+
+    static func latest(_ pulls: [RecentMerge], limit: Int) -> [RecentMerge] {
+        var seen = Set<URL>()
+        return Array(pulls.sorted {
+            $0.mergedAt == $1.mergedAt ? $0.url.absoluteString < $1.url.absoluteString : $0.mergedAt > $1.mergedAt
+        }.filter { seen.insert($0.url).inserted }.prefix(limit))
+
+    }
+
+    // GitHub sorts by update time, not merge time. Older updated pages cannot
+    // contain a more recent merge once this bound is crossed (updated >= merged).
+    static func canStopPaging(_ pulls: [RecentMerge], oldestUpdatedAt: Date?, limit: Int) -> Bool {
+        let latest = latest(pulls, limit: limit)
+        guard latest.count == limit, let cutoff = latest.last?.mergedAt,
+              let oldestUpdatedAt = oldestUpdatedAt else { return false }
+        return oldestUpdatedAt < cutoff
+    }
+}
+struct RecentMergeRepository: Codable { var nameWithOwner: String }
+struct RecentMergesResponse: Codable {
+    var data: RecentMergesData?
+    var errors: [GraphQLError]?
+}
+struct RecentMergesData: Codable { var repository: RecentMergesRepository? }
+struct RecentMergesRepository: Codable { var pullRequests: RecentMergesConnection }
+struct RecentMergesConnection: Codable { var nodes: [RecentMerge]; var pageInfo: PageInfo }
+
+enum RecentMergeSettings {
+    static func repositories(from text: String) throws -> [String] {
+        let names = text.components(separatedBy: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ",;")))
+            .filter { !$0.isEmpty }
+        var seen = Set<String>()
+        return try names.filter { name in
+            guard name.range(of: #"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"#, options: .regularExpression) != nil else {
+                throw InvalidRepository(name: name)
+            }
+            return seen.insert(name.lowercased()).inserted
+        }
+    }
+    struct InvalidRepository: LocalizedError {
+        var name: String
+        var errorDescription: String? { "Invalid repository: \(name). Use owner/repository." }
+    }
+}

@@ -15,6 +15,9 @@ struct PreferencesView: View {
     @Default(.githubApiBaseUrl) var githubApiBaseUrl
     @FromKeychain(.githubToken) var githubToken
 
+    @Default(.showRecentMerges) var showRecentMerges
+    @Default(.recentMergeRepositories) var recentMergeRepositories
+    @Default(.recentMergeLimit) var recentMergeLimit
     @Default(.actionDashboard) var actionDashboard
     @Default(.categories) var categories
 
@@ -80,6 +83,34 @@ struct PreferencesView: View {
             .frame(maxWidth: .infinity)
             .tabItem{Text("General")}
 
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle("Show Just so you know", isOn: $showRecentMerges)
+                Text("Latest PRs merged into develop, across the repositories below. This section does not affect action counters.")
+                    .foregroundColor(.secondary)
+                Text("Repositories (owner/repository, one per line):")
+                TextEditor(text: $recentMergeRepositories)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(height: 120)
+                    .border(Color.secondary.opacity(0.3))
+                    .disabled(!showRecentMerges)
+                Text("Example: my-organization/ios-app")
+                    .font(.footnote).foregroundColor(.secondary)
+                if let error = repositoryValidationError {
+                    Text(error).foregroundColor(.red).font(.footnote)
+                }
+                Picker("Number of PRs", selection: $recentMergeLimit) {
+                    Text("3").tag(3)
+                    Text("5").tag(5)
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .frame(width: 240)
+                .disabled(!showRecentMerges)
+                Text("Click a title to open the PR. Hover to see its repository and merge date. Changes apply when Preferences closes.")
+                    .font(.footnote).foregroundColor(.secondary)
+            }
+            .padding()
+            .tabItem { Text("Recent merges") }
+
             categoriesTab
                 .disabled(actionDashboard)
                 .tabItem{Text("Categories")}
@@ -133,6 +164,13 @@ struct PreferencesView: View {
         .frame(width: 780)
         .padding()
 
+    }
+
+    private var repositoryValidationError: String? {
+        do {
+            _ = try RecentMergeSettings.repositories(from: recentMergeRepositories)
+            return nil
+        } catch { return error.localizedDescription }
     }
 
     /// Categories management tab: a scrollable, reorderable list of categories
