@@ -478,7 +478,8 @@ extension AppDelegate {
             .appendIcon(iconName: "person")
             .appendString(string: pull.node.author?.login ?? User.ghost.login)
             .appendSeparator()
-            .appendString(string: pull.node.createdAt.creationAgeLabel())
+            .appendIcon(iconName: "calendar")
+            .appendString(string: pull.node.createdAt.ageLabel())
         
         let approvalCount = pull.node.approvalCount
         let approvalColor: NSColor = approvalCount >= 2 ? .systemGreen : .secondaryLabelColor
