@@ -28,6 +28,14 @@ If you liked the PullBar, check the [PullBar Pro](https://menubar-apps.github.io
 
 # Action dashboard (this fork)
 
+The **Just so you know · develop** section lists the latest five merged PR titles,
+across repositories configured in **Preferences → Recent merges**. Enter one
+`owner/repository` per line; select three or five results, or disable the section.
+Results are ordered by the actual merge date, not the last comment or update.
+Click a title to open its PR; hover for the repository and merge date. These PRs
+do not affect action counters. A missing configuration, empty history or fetch
+error is shown explicitly in the section.
+
 Enabled by default in Preferences → General. The menu shows **To review** and
 **My PRs**, with actionable PRs first. Draft PRs are excluded from all sections and counters.
 Your ready-to-merge PRs have a green check beside the title and a green status. Disable **Action dashboard** to use the

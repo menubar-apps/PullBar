@@ -58,6 +58,58 @@ public class GitHubClient {
         fetch(after: nil, accumulated: [])
     }
 
+    func getRecentMerges(repository: String, limit: Int, completion: @escaping (Result<[RecentMerge], Error>) -> Void) {
+        let parts = repository.split(separator: "/")
+        guard parts.count == 2, limit > 0 else {
+            completion(.failure(GitHubQueryError(message: "Use owner/repository for recent merges.")))
+            return
+        }
+        let headers: HTTPHeaders = [.authorization(bearerToken: githubToken), .accept("application/json")]
+        let endpoint = Defaults[.githubApiBaseUrl] + "/graphql"
+        let query = """
+        query($owner: String!, $name: String!, $after: String) {
+            repository(owner: $owner, name: $name) {
+                pullRequests(states: MERGED, baseRefName: "develop", first: 50,
+                             orderBy: {field: UPDATED_AT, direction: DESC}, after: $after) {
+                    pageInfo { hasNextPage endCursor }
+                    nodes { title url number mergedAt updatedAt repository { nameWithOwner } }
+                }
+            }
+        }
+        """
+        func fetch(after: String?, accumulated: [RecentMerge]) {
+            var variables: [String: Any] = ["owner": String(parts[0]), "name": String(parts[1])]
+            if let after = after { variables["after"] = after }
+            AF.request(endpoint, method: .post, parameters: ["query": query, "variables": variables],
+                       encoding: JSONEncoding.default, headers: headers)
+                .validate(statusCode: 200..<300)
+                .responseDecodable(of: RecentMergesResponse.self, decoder: GithubDecoder()) { response in
+                    switch response.result {
+                    case .failure(let error): completion(.failure(error))
+                    case .success(let result):
+                        if let error = result.errors?.first {
+                            completion(.failure(GitHubQueryError(message: error.message)))
+                            return
+                        }
+                        guard let connection = result.data?.repository?.pullRequests else {
+                            completion(.failure(GitHubQueryError(message: "Repository unavailable: " + repository)))
+                            return
+                        }
+                        let pulls = accumulated + connection.nodes
+                        if !connection.pageInfo.hasNextPage || RecentMerge.canStopPaging(pulls,
+                            oldestUpdatedAt: connection.nodes.last?.updatedAt, limit: limit) {
+                            completion(.success(RecentMerge.latest(pulls, limit: limit)))
+                        } else if let cursor = connection.pageInfo.endCursor, cursor != after {
+                            fetch(after: cursor, accumulated: pulls)
+                        } else {
+                            completion(.failure(GitHubQueryError(message: "Incomplete merge history: " + repository)))
+                        }
+                    }
+                }
+        }
+        fetch(after: nil, accumulated: [])
+    }
+
     private func buildGraphQlQuery() -> String {
         """
         query($searchQuery: String!, $after: String) {

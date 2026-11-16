@@ -273,6 +273,15 @@ extension AppDelegate {
         ] : Defaults[.categories].filter { !$0.filter.trimmingCharacters(in: .whitespaces).isEmpty }
         var results: [String: [Edge]] = [:]
         var fetchError: Error?
+        let showRecentMerges = Defaults[.showRecentMerges]
+        let mergeLimit = Defaults[.recentMergeLimit] == 3 ? 3 : 5
+        var mergeRepositories: [String] = []
+        var recentMerges: [RecentMerge] = []
+        var mergeError: Error?
+        if showRecentMerges {
+            do { mergeRepositories = try RecentMergeSettings.repositories(from: Defaults[.recentMergeRepositories]) }
+            catch { mergeError = error }
+        }
         let group = DispatchGroup()
         if menu.items.isEmpty {
             menu.addItem(withTitle: "Loading pull requests…", action: nil, keyEquivalent: "")
@@ -284,6 +293,16 @@ extension AppDelegate {
                 switch result {
                 case .success(let pulls): results[category.id] = pulls
                 case .failure(let error): fetchError = error
+                }
+                group.leave()
+            }
+        }
+        for repository in mergeRepositories {
+            group.enter()
+            ghClient.getRecentMerges(repository: repository, limit: mergeLimit) { result in
+                switch result {
+                case .success(let pulls): recentMerges.append(contentsOf: pulls)
+                case .failure(let error): mergeError = error
                 }
                 group.leave()
             }
@@ -334,6 +353,36 @@ extension AppDelegate {
                 }
                 if pulls.isEmpty { target.addItem(withTitle: "No open PRs", action: nil, keyEquivalent: "") }
                 for pull in pulls { self.addMenuItems(pull: pull, to: target) }
+                updatedMenu.addItem(.separator())
+            }
+            if showRecentMerges {
+                updatedMenu.addItem(withTitle: "Just so you know · develop", action: nil, keyEquivalent: "")
+                if let error = mergeError {
+                    let item = NSMenuItem(title: "Recent merges unavailable — check settings or retry", action: nil, keyEquivalent: "")
+                    item.toolTip = error.localizedDescription
+                    updatedMenu.addItem(item)
+                } else if mergeRepositories.isEmpty {
+                    let item = NSMenuItem(title: "Choose repositories in Preferences → Recent merges…",
+                                          action: #selector(self.openPrefecencesWindow), keyEquivalent: "")
+                    item.target = self
+                    updatedMenu.addItem(item)
+                } else {
+                    let latest = RecentMerge.latest(recentMerges, limit: mergeLimit)
+                    if latest.isEmpty {
+                        updatedMenu.addItem(withTitle: "No PRs merged into develop", action: nil, keyEquivalent: "")
+                    }
+                    let formatter = DateFormatter()
+                    formatter.dateStyle = .medium
+                    formatter.timeStyle = .short
+                    for pull in latest {
+                        let item = NSMenuItem(title: pull.title.replacingOccurrences(of: "\n", with: " ").trunc(length: 80),
+                                              action: #selector(self.openLink), keyEquivalent: "")
+                        item.target = self
+                        item.representedObject = pull.url
+                        item.toolTip = "\(pull.title)\n\(pull.repository.nameWithOwner) #\(pull.number)\nMerged into develop: \(formatter.string(from: pull.mergedAt))"
+                        updatedMenu.addItem(item)
+                    }
+                }
                 updatedMenu.addItem(.separator())
             }
             if dashboard {
