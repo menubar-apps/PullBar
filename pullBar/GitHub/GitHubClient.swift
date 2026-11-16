@@ -82,7 +82,13 @@ public class GitHubClient {
                             }
                             reviewThreads(first: 100) {
                                 totalCount
-                                nodes { isResolved }
+                                nodes {
+                                    isResolved
+                                    comments(last: 100) {
+                                        totalCount
+                                        nodes { viewerDidAuthor createdAt state }
+                                    }
+                                }
                             }
                             potentialMergeCommit {
                                     oid

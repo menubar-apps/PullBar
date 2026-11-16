@@ -47,6 +47,13 @@ are preserved.
   `MERGEABLE` / `CLEAN` state with no outstanding review requirement. This is an
   indication based on the last refresh, not an automatic merge or a guarantee
   that every possible merge permission is satisfied.
+- An orange “quelqu’un a répondu après toi” indicator counts open code review
+  conversations with a submitted comment from someone else after your latest
+  submitted comment in that conversation. Each conversation counts once. It
+  clears when you reply again or the conversation is resolved, not when you open
+  the PR. This is an activity indicator, not a read receipt. The latest 100
+  comments per fetched thread are inspected; incomplete history is flagged and
+  the count is labelled as a minimum. General PR comments are not included.
 - Review comments use GitHub's PR-level unread flag and the local time you last
   opened that PR from PullBar. GitHub does not expose an individual read flag per
   review here. Opening a PR acknowledges existing comments locally; unresolved

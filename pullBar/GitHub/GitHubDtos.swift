@@ -314,7 +314,34 @@ struct ReviewThreads: Codable {
     var totalCount: Int
     var nodes: [ReviewThread]
 }
-struct ReviewThread: Codable { var isResolved: Bool }
+struct ReviewThread: Codable {
+    var isResolved: Bool
+    var comments: ReviewThreadComments?
+
+    var hasReplyAfterViewer: Bool {
+        guard !isResolved, let comments = comments else { return false }
+        let submitted = comments.nodes.filter { $0.state == "SUBMITTED" }
+        guard let lastOwnComment = submitted.filter({ $0.viewerDidAuthor }).map({ $0.createdAt }).max() else {
+            return false // Participation is required; owning the PR is not enough.
+        }
+        return submitted.contains { !$0.viewerDidAuthor && $0.createdAt > lastOwnComment }
+    }
+
+    var replyHistoryComplete: Bool {
+        guard !isResolved else { return true }
+        guard let comments = comments else { return false }
+        return comments.nodes.count == comments.totalCount
+    }
+}
+struct ReviewThreadComments: Codable {
+    var totalCount: Int
+    var nodes: [ReviewThreadComment]
+}
+struct ReviewThreadComment: Codable {
+    var viewerDidAuthor: Bool
+    var createdAt: Date
+    var state: String
+}
 
 enum CIState: String {
     case passed = "CI passed"
@@ -337,6 +364,13 @@ extension Pull {
         reviewDecision == "CHANGES_REQUESTED" || reviews.edges.contains { $0.node.state == "CHANGES_REQUESTED" }
     }
     var unresolvedThreads: Int { reviewThreads.nodes.filter { !$0.isResolved }.count }
+    var conversationsWithRepliesAfterViewer: Int {
+        reviewThreads.nodes.filter { $0.hasReplyAfterViewer }.count
+    }
+    var replyHistoryComplete: Bool {
+        reviewThreads.nodes.count == reviewThreads.totalCount
+            && reviewThreads.nodes.allSatisfy { $0.replyHistoryComplete }
+    }
     var detailsComplete: Bool {
         reviews.edges.count == reviews.totalCount && reviewThreads.nodes.count == reviewThreads.totalCount
     }
