@@ -37,7 +37,7 @@ do not affect action counters. A missing configuration, empty history or fetch
 error is shown explicitly in the section.
 
 Enabled by default in Preferences → General. The menu shows **To review** and
-**My PRs**, with actionable PRs first. Draft PRs are excluded from all sections and counters.
+**My PRs**, with actionable PRs first. Draft PRs are included and marked with 🚧 before their title; they are never considered ready to merge.
 Your ready-to-merge PRs have a green check beside the title and a green status. Disable **Action dashboard** to use the
 existing custom categories and single category counter again; saved categories
 are preserved.

@@ -459,6 +459,10 @@ extension AppDelegate {
         
         let issueItemTitle = NSMutableAttributedString(string: "")
             .appendString(string: pull.node.isReadByViewer ? "" : "⏺ ", color: .systemBlue)
+
+        if pull.node.isDraft {
+            issueItemTitle.appendString(string: "🚧 ")
+        }
         
         if pull.node.viewerDidAuthor && pull.node.readyToMerge {
             issueItemTitle.appendIcon(iconName: "check-circle-fill", color: .systemGreen)
