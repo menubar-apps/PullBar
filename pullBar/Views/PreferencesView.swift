@@ -23,6 +23,7 @@ struct PreferencesView: View {
 
     @Default(.showAvatar) var showAvatar
     @Default(.showLabels) var showLabels
+    @Default(.showDraftPRs) var showDraftPRs
     @Default(.showCIDiagnostics) var showCIDiagnostics
 
     @Default(.refreshRate) var refreshRate
@@ -47,6 +48,9 @@ struct PreferencesView: View {
                     .help("Show raw CI data for the head and test merge commits in PR rows and tooltips. Applied when Preferences closes.")
                 Text("Display technical CI details under each PR and in its tooltip.")
                     .font(.footnote).foregroundColor(.secondary)
+
+                Toggle("Show draft PRs", isOn: $showDraftPRs)
+                    .help("Include draft PRs marked with 🚧 in lists and counters. Applied when Preferences closes.")
 
                 HStack(alignment: .center) {
                     Text("Show Avatar:").frame(width: 120, alignment: .trailing)
