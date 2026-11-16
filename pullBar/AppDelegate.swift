@@ -465,6 +465,19 @@ extension AppDelegate {
             }
         }
 
+        let replies = pull.node.conversationsWithRepliesAfterViewer
+        if replies > 0 {
+            let countPrefix = pull.node.replyHistoryComplete ? "" : "Au moins "
+            let conversation = replies == 1 ? "conversation" : "conversations"
+            issueItemTitle.appendNewLine()
+                .appendString(string: "\(countPrefix)\(replies) \(conversation) — ", color: .labelColor)
+                .appendString(string: "quelqu’un a répondu après toi", color: .systemOrange)
+        }
+        if !pull.node.replyHistoryComplete {
+            issueItemTitle.appendNewLine()
+                .appendString(string: "Suivi des réponses incomplet — voir GitHub", color: .secondaryLabelColor)
+        }
+
         if !pull.node.labels.nodes.isEmpty && Defaults[.showLabels] {
             issueItemTitle
                 .appendNewLine()

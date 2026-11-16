@@ -175,6 +175,46 @@ struct ActionRulesTests {
         pr.commits!.nodes[0].commit.statusCheckRollup!.contexts.nodes[0].startedAt = nil
         expect(pr.runningDurationLabel(now: clock) == "duration unavailable", "Missing starts must not invent durations")
         expect(ContextNode.formatDuration(30) == "<1 min", "Subminute elapsed time is explicit")
+        func threadComment(_ mine: Bool, _ offset: TimeInterval, state: String = "SUBMITTED") -> ReviewThreadComment {
+            ReviewThreadComment(viewerDidAuthor: mine, createdAt: clock.addingTimeInterval(offset), state: state)
+        }
+        var thread = ReviewThread(isResolved: false, comments: ReviewThreadComments(totalCount: 2,
+            nodes: [threadComment(true, 0), threadComment(false, 10)]))
+        expect(thread.hasReplyAfterViewer, "A reply after your comment is flagged")
+        thread.comments!.nodes.append(threadComment(false, 20))
+        thread.comments!.totalCount = 3
+        pr = base
+        pr.reviewThreads = ReviewThreads(totalCount: 1, nodes: [thread])
+        expect(pr.conversationsWithRepliesAfterViewer == 1, "Count conversations, not individual replies")
+        expect(pr.replyHistoryComplete, "Fully fetched comments give a complete count")
+        thread.comments!.nodes.append(threadComment(true, 30))
+        thread.comments!.totalCount = 4
+        expect(!thread.hasReplyAfterViewer, "Your next reply clears the signal")
+        thread.comments!.nodes.append(threadComment(false, 40))
+        thread.comments!.totalCount = 5
+        expect(thread.hasReplyAfterViewer, "A later reply restores the signal")
+        thread.isResolved = true
+        expect(!thread.hasReplyAfterViewer, "Resolved conversations are excluded")
+        thread.isResolved = false
+        thread.comments!.nodes = [threadComment(false, 0), threadComment(false, 10)]
+        thread.comments!.totalCount = 2
+        expect(!thread.hasReplyAfterViewer, "PR ownership alone does not imply participation")
+        thread.comments!.nodes = [threadComment(true, 0), threadComment(false, 10, state: "PENDING")]
+        expect(!thread.hasReplyAfterViewer, "Unsubmitted reviews are not replies")
+        thread.comments!.nodes = [threadComment(true, 0), threadComment(false, 10), threadComment(true, 20, state: "PENDING")]
+        thread.comments!.totalCount = 3
+        expect(thread.hasReplyAfterViewer, "Your draft reply does not clear the signal")
+        thread.comments!.nodes.reverse()
+        expect(thread.hasReplyAfterViewer, "Use creation dates regardless of array order")
+        thread.comments!.totalCount = 101
+        expect(!thread.replyHistoryComplete, "Truncated comment history must be flagged")
+        pr.reviewThreads = ReviewThreads(totalCount: 2, nodes: [thread])
+        expect(!pr.replyHistoryComplete, "Missing conversations must be flagged")
+        thread.comments = nil
+        expect(!thread.hasReplyAfterViewer && !thread.replyHistoryComplete, "Missing data is not a known absence of replies")
+        let threadJSON = #"{"isResolved":false,"comments":{"totalCount":2,"nodes":[{"viewerDidAuthor":true,"createdAt":"2026-11-13T10:00:00Z","state":"SUBMITTED"},{"viewerDidAuthor":false,"createdAt":"2026-11-13T11:00:00Z","state":"SUBMITTED"}]}}"#
+        let decodedThread = try decoder.decode(ReviewThread.self, from: Foundation.Data(threadJSON.utf8))
+        expect(decodedThread.hasReplyAfterViewer, "Decode GitHub thread comments and timestamps")
         print("Passed \(checks) action-rule checks")
     }
 }
