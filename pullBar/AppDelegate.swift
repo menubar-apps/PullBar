@@ -377,6 +377,11 @@ extension AppDelegate {
                     for pull in latest {
                         let item = NSMenuItem(title: pull.title.replacingOccurrences(of: "\n", with: " ").trunc(length: 80),
                                               action: #selector(self.openLink), keyEquivalent: "")
+                        item.attributedTitle = NSMutableAttributedString(string: "")
+                            .appendString(string: item.title, color: .labelColor)
+                            .appendNewLine()
+                            .appendIcon(iconName: "calendar")
+                            .appendString(string: pull.mergedAt.ageLabel())
                         item.target = self
                         item.representedObject = pull.url
                         item.toolTip = "\(pull.title)\n\(pull.repository.nameWithOwner) #\(pull.number)\nMerged into develop: \(formatter.string(from: pull.mergedAt))"
