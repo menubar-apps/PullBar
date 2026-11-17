@@ -52,15 +52,9 @@ struct PreferencesView: View {
                 Toggle("Show draft PRs", isOn: $showDraftPRs)
                     .help("Include draft PRs marked with 🚧 in lists and counters. Applied when Preferences closes.")
 
-                HStack(alignment: .center) {
-                    Text("Show Avatar:").frame(width: 120, alignment: .trailing)
-                    Toggle("", isOn: $showAvatar)
-                }
+                Toggle("Show Avatar", isOn: $showAvatar)
 
-                HStack(alignment: .center) {
-                    Text("Show Labels:").frame(width: 120, alignment: .trailing)
-                    Toggle("", isOn: $showLabels)
-                }
+                Toggle("Show Labels", isOn: $showLabels)
 
                 HStack(alignment: .center) {
                     Text("Refresh Rate:").frame(width: 120, alignment: .trailing)
@@ -75,11 +69,8 @@ struct PreferencesView: View {
                         .frame(width: 100)
                 }
 
-                HStack(alignment: .center) {
-                    Text("Launch at login:").frame(width: 120, alignment: .trailing)
-                    LaunchAtLogin.Toggle {
-                        Text("")
-                    }
+                LaunchAtLogin.Toggle {
+                    Text("Launch at login")
                 }
 
             }
@@ -165,6 +156,7 @@ struct PreferencesView: View {
             .tabItem{Text("Authentication")}
 
         }
+        .toggleStyle(CheckboxToggleStyle())
         .frame(width: 780)
         .padding()
 
