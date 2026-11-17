@@ -215,6 +215,33 @@ struct ActionRulesTests {
         let threadJSON = #"{"isResolved":false,"comments":{"totalCount":2,"nodes":[{"viewerDidAuthor":true,"createdAt":"2026-11-13T10:00:00Z","state":"SUBMITTED"},{"viewerDidAuthor":false,"createdAt":"2026-11-13T11:00:00Z","state":"SUBMITTED"}]}}"#
         let decodedThread = try decoder.decode(ReviewThread.self, from: Foundation.Data(threadJSON.utf8))
         expect(decodedThread.hasReplyAfterViewer, "Decode GitHub thread comments and timestamps")
+        let waiting = ReviewThread(isResolved: false, comments: ReviewThreadComments(totalCount: 2,
+            nodes: [threadComment(false, 0), threadComment(true, 10)]))
+        expect(waiting.awaitingReply, "Your submitted response waits for the other person")
+        pr = base
+        pr.reviewThreads = ReviewThreads(totalCount: 1, nodes: [waiting])
+        expect(pr.actionReasons(lastRead: nil).isEmpty, "Waiting alone does not contribute to the action badge")
+        expect(!pr.readyToMerge, "Waiting does not resolve the merge blocker")
+        expect(pr.discussionSummary == "1 unresolved discussion · Awaiting reply", "Waiting remains visible")
+        pr.reviewThreads = ReviewThreads(totalCount: 2, nodes: [waiting, decodedThread])
+        expect(pr.actionableDiscussions == 1 && pr.discussionsAwaitingReply == 1, "Mixed conversations only count actionable threads")
+        expect(pr.actionReasons(lastRead: nil).contains("2 unresolved discussions · Awaiting reply in 1"), "Partial waiting is still actionable")
+        pr.reviewThreads = ReviewThreads(totalCount: 1, nodes: [waiting])
+        pr.mergeable = "CONFLICTING"
+        expect(pr.actionReasons(lastRead: nil).contains("Resolve conflicts"), "Other actions remain visible while waiting")
+        var uncertain = waiting
+        uncertain.comments!.totalCount = 100
+        expect(!uncertain.awaitingReply, "Incomplete comments cannot silence an action")
+        uncertain = waiting
+        uncertain.comments!.nodes[1].state = "PENDING"
+        expect(!uncertain.awaitingReply, "An unsent response cannot silence an action")
+        uncertain = waiting
+        uncertain.comments!.nodes[0].createdAt = uncertain.comments!.nodes[1].createdAt
+        expect(!uncertain.awaitingReply, "Timestamp ties remain actionable")
+        uncertain = waiting
+        uncertain.isResolved = true
+        expect(!uncertain.awaitingReply, "Resolved threads are not waiting")
+        expect(!decodedThread.awaitingReply, "A response after yours restores the action")
         print("Passed \(checks) action-rule checks")
     }
 }

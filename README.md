@@ -51,6 +51,12 @@ are preserved.
 - **Person icon + plain count:** your open PRs with failing CI, requested changes, unresolved
   review discussions, new review comments, conflicts, or ready to merge.
 - Each PR counts once in its section, even when it has several action reasons.
+  Open discussions where your submitted comment is the latest are shown as
+  **Awaiting reply** and do not contribute an action by themselves. A later
+  response from someone else makes the discussion actionable again. Draft replies,
+  ambiguous timestamp ties and incomplete comment history do not silence actions.
+  Other reasons (CI failures, requested changes, unread review comments or conflicts)
+  still count, and unresolved discussions still prevent the ready-to-merge indicator.
   Zero counters are hidden; hover over the icon for the meaning of both counts.
 - Each row shows current approvals, CI state and action reasons. Diff line counts
   are hidden. Click a PR to open it; Option-click still copies its URL.
@@ -69,8 +75,8 @@ are preserved.
   the count is labelled as a minimum. General PR comments are not included.
 - Review comments use GitHub's PR-level unread flag and the local time you last
   opened that PR from PullBar. GitHub does not expose an individual read flag per
-  review here. Opening a PR acknowledges existing comments locally; unresolved
-  threads and change requests remain actionable until addressed on GitHub.
+  review here. Opening a PR acknowledges existing comments locally; change requests
+  and unresolved threads not awaiting a reply remain actionable until addressed on GitHub.
 - CI distinguishes running checks, queued/waiting checks and pending legacy statuses.
   An existing failure stays visible even while other checks run.
 - CI is fetched regardless of the old build-display setting. Missing, queued,

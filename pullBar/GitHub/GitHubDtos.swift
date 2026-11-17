@@ -329,6 +329,14 @@ struct ReviewThread: Codable {
         return submitted.contains { !$0.viewerDidAuthor && $0.createdAt > lastOwnComment }
     }
 
+    var awaitingReply: Bool {
+        guard !isResolved, replyHistoryComplete, let comments = comments else { return false }
+        let submitted = comments.nodes.filter { $0.state == "SUBMITTED" }
+        guard let latest = submitted.map({ $0.createdAt }).max() else { return false }
+        // Ambiguous timestamp ties must not hide someone else's response.
+        return submitted.filter { $0.createdAt == latest }.allSatisfy { $0.viewerDidAuthor }
+    }
+
     var replyHistoryComplete: Bool {
         guard !isResolved else { return true }
         guard let comments = comments else { return false }
@@ -366,6 +374,16 @@ extension Pull {
         reviewDecision == "CHANGES_REQUESTED" || reviews.edges.contains { $0.node.state == "CHANGES_REQUESTED" }
     }
     var unresolvedThreads: Int { reviewThreads.nodes.filter { !$0.isResolved }.count }
+    var discussionsAwaitingReply: Int { reviewThreads.nodes.filter { $0.awaitingReply }.count }
+    var actionableDiscussions: Int { unresolvedThreads - discussionsAwaitingReply }
+    var discussionSummary: String {
+        let summary = "\(unresolvedThreads) unresolved discussion\(unresolvedThreads == 1 ? "" : "s")"
+        guard discussionsAwaitingReply > 0 else { return summary }
+        if discussionsAwaitingReply == unresolvedThreads && reviewThreads.nodes.count == reviewThreads.totalCount {
+            return summary + " · Awaiting reply"
+        }
+        return summary + " · Awaiting reply in \(discussionsAwaitingReply)"
+    }
     var conversationsWithRepliesAfterViewer: Int {
         reviewThreads.nodes.filter { $0.hasReplyAfterViewer }.count
     }
@@ -439,7 +457,7 @@ extension Pull {
         var reasons: [String] = []
         if ciState == .failed { reasons.append("Fix CI") }
         if changesRequested { reasons.append("Changes requested") }
-        if unresolvedThreads > 0 { reasons.append("\(unresolvedThreads) unresolved discussions") }
+        if actionableDiscussions > 0 { reasons.append(discussionSummary) }
         if hasUnreadReview(since: lastRead) { reasons.append("New review comments") }
         if mergeable == "CONFLICTING" { reasons.append("Resolve conflicts") }
         if readyToMerge { reasons.append("Ready to merge") }
