@@ -507,6 +507,9 @@ extension AppDelegate {
         }
         issueItemTitle.appendString(string: pull.node.ciSummary, color: ciColor)
         var states = reasons(for: pull.node)
+        if pull.node.unresolvedThreads > 0 && pull.node.actionableDiscussions == 0 {
+            states.append(pull.node.discussionSummary)
+        }
         if reviewURLs.contains(pull.node.url) { states.insert("Your review requested", at: 0) }
         if !pull.node.detailsComplete { states.append("Review details incomplete — check GitHub") }
         if states.isEmpty {
