@@ -30,6 +30,17 @@ struct PreferencesView: View {
     @Default(.refreshRate) var refreshRate
     @Default(.counterSelection) var counterSelection
 
+    private enum SettingsTab: String, CaseIterable, Identifiable {
+        case general = "General"
+        case recentMerges = "Recent merges"
+        case excludedRepositories = "Excluded repositories"
+        case categories = "Categories"
+        case authentication = "Authentication"
+
+        var id: Self { self }
+    }
+
+    @State private var selectedTab: SettingsTab = .general
     @State private var showGhAlert = false
 
     @StateObject private var githubTokenValidator = GithubTokenValidator()
@@ -37,7 +48,17 @@ struct PreferencesView: View {
 
     var body: some View {
 
-        TabView {
+        VStack(spacing: 16) {
+            Picker("Settings section", selection: $selectedTab) {
+                ForEach(SettingsTab.allCases) { tab in
+                    Text(tab.rawValue).tag(tab)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .labelsHidden()
+
+            switch selectedTab {
+            case .general:
             Form {
                 Toggle("Action dashboard", isOn: $actionDashboard)
                 Text("Red badge: PRs awaiting your review. Person + count: your PRs requiring action. Each PR counts once per section.")
@@ -77,8 +98,9 @@ struct PreferencesView: View {
             }
             .padding(8)
             .frame(maxWidth: .infinity)
-            .tabItem{Text("General")}
 
+
+            case .recentMerges:
             VStack(alignment: .leading, spacing: 12) {
                 Toggle("Show Just so you know", isOn: $showRecentMerges)
                 Text("Latest PRs merged into develop, across the repositories below. This section does not affect action counters.")
@@ -105,8 +127,9 @@ struct PreferencesView: View {
                     .font(.footnote).foregroundColor(.secondary)
             }
             .padding()
-            .tabItem { Text("Recent merges") }
 
+
+            case .excludedRepositories:
             VStack(alignment: .leading, spacing: 12) {
                 Text("Hide PRs from these repositories in all sections, including recent merges. Hidden PRs do not affect counters.")
                     .foregroundColor(.secondary)
@@ -124,12 +147,14 @@ struct PreferencesView: View {
                     .font(.footnote).foregroundColor(.secondary)
             }
             .padding()
-            .tabItem { Text("Excluded repositories") }
 
+
+            case .categories:
             categoriesTab
                 .disabled(actionDashboard)
-                .tabItem{Text("Categories")}
 
+
+            case .authentication:
             Form {
                 HStack(alignment: .center) {
                     Text("API Base URL:").frame(width: 120, alignment: .trailing)
@@ -173,7 +198,7 @@ struct PreferencesView: View {
             .onAppear() {
                 githubTokenValidator.validate()
             }
-            .tabItem{Text("Authentication")}
+            }
 
         }
         .toggleStyle(CheckboxToggleStyle())
