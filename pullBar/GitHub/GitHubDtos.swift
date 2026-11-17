@@ -151,9 +151,11 @@ struct User: Codable {
 
 struct Repository: Codable {
     var name: String
+    var nameWithOwner: String? = nil
     
     enum CodingKeys: String, CodingKey {
         case name
+        case nameWithOwner
     }
 }
 

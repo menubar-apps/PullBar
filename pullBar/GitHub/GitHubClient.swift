@@ -124,7 +124,7 @@ public class GitHubClient {
                             number createdAt updatedAt title url isDraft isReadByViewer viewerDidAuthor
                             mergeable mergeStateStatus reviewDecision
                             author { login avatarUrl }
-                            repository { name }
+                            repository { name nameWithOwner }
                             labels(first: 5) { nodes { name color } }
                             reviews: latestOpinionatedReviews(first: 100) {
                                 totalCount
