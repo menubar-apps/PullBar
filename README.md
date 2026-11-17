@@ -28,6 +28,11 @@ If you liked the PullBar, check the [PullBar Pro](https://menubar-apps.github.io
 
 # Action dashboard (this fork)
 
+**Preferences → Excluded repositories** hides PRs from selected repositories in
+all sections and counters, including recent merges. Enter one `owner/repository`
+per line; matching is case-insensitive. Leave the list empty to exclude nothing.
+Changes apply when Preferences closes.
+
 The **Just so you know · develop** section lists the latest five merged PR titles,
 across repositories configured in **Preferences → Recent merges**. Enter one
 `owner/repository` per line; select three or five results, or disable the section.

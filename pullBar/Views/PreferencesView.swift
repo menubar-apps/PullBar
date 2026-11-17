@@ -16,6 +16,7 @@ struct PreferencesView: View {
     @FromKeychain(.githubToken) var githubToken
 
     @Default(.showRecentMerges) var showRecentMerges
+    @Default(.excludedRepositories) var excludedRepositories
     @Default(.recentMergeRepositories) var recentMergeRepositories
     @Default(.recentMergeLimit) var recentMergeLimit
     @Default(.actionDashboard) var actionDashboard
@@ -106,6 +107,25 @@ struct PreferencesView: View {
             .padding()
             .tabItem { Text("Recent merges") }
 
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Hide PRs from these repositories in all sections, including recent merges. Hidden PRs do not affect counters.")
+                    .foregroundColor(.secondary)
+                Text("Repositories (owner/repository, one per line):")
+                TextEditor(text: $excludedRepositories)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(height: 120)
+                    .border(Color.secondary.opacity(0.3))
+                Text("Example: my-organization/ios-app")
+                    .font(.footnote).foregroundColor(.secondary)
+                if let error = excludedRepositoryValidationError {
+                    Text(error).foregroundColor(.red).font(.footnote)
+                }
+                Text("Leave empty to follow all repositories. Changes apply when Preferences closes.")
+                    .font(.footnote).foregroundColor(.secondary)
+            }
+            .padding()
+            .tabItem { Text("Excluded repositories") }
+
             categoriesTab
                 .disabled(actionDashboard)
                 .tabItem{Text("Categories")}
@@ -165,6 +185,13 @@ struct PreferencesView: View {
     private var repositoryValidationError: String? {
         do {
             _ = try RecentMergeSettings.repositories(from: recentMergeRepositories)
+            return nil
+        } catch { return error.localizedDescription }
+    }
+
+    private var excludedRepositoryValidationError: String? {
+        do {
+            _ = try RecentMergeSettings.repositories(from: excludedRepositories)
             return nil
         } catch { return error.localizedDescription }
     }

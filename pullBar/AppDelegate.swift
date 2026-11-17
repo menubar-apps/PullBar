@@ -273,6 +273,11 @@ extension AppDelegate {
         ] : Defaults[.categories].filter { !$0.filter.trimmingCharacters(in: .whitespaces).isEmpty }
         var results: [String: [Edge]] = [:]
         var fetchError: Error?
+        var excludedRepositories = Set<String>()
+        do {
+            excludedRepositories = Set(try RecentMergeSettings.repositories(from: Defaults[.excludedRepositories]).map { $0.lowercased() })
+        } catch { fetchError = error }
+        let exclusions = excludedRepositories.sorted().map { "-repo:\($0)" }.joined(separator: " ")
         let showRecentMerges = Defaults[.showRecentMerges]
         let mergeLimit = Defaults[.recentMergeLimit] == 3 ? 3 : 5
         var mergeRepositories: [String] = []
@@ -287,17 +292,20 @@ extension AppDelegate {
             menu.addItem(withTitle: "Loading pull requests…", action: nil, keyEquivalent: "")
             addMenuFooterItems()
         }
-        for category in categories {
+        for category in categories where fetchError == nil {
             group.enter()
-            ghClient.getPulls(filter: category.filter) { result in
+            ghClient.getPulls(filter: category.filter + " " + exclusions) { result in
                 switch result {
-                case .success(let pulls): results[category.id] = pulls
+                case .success(let pulls):
+                    results[category.id] = pulls.filter {
+                        !excludedRepositories.contains($0.node.repository.nameWithOwner?.lowercased() ?? "")
+                    }
                 case .failure(let error): fetchError = error
                 }
                 group.leave()
             }
         }
-        for repository in mergeRepositories {
+        for repository in mergeRepositories where !excludedRepositories.contains(repository.lowercased()) && fetchError == nil {
             group.enter()
             ghClient.getRecentMerges(repository: repository, limit: mergeLimit) { result in
                 switch result {
