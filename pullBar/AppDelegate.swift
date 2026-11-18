@@ -593,6 +593,12 @@ extension AppDelegate {
         self.menu.addItem(refreshItem)
         self.menu.addItem(.separator())
         self.menu.addItem(withTitle: "Preferences...", action: #selector(self.openPrefecencesWindow), keyEquivalent: "")
+        let rulesItem = NSMenuItem(title: "Règles de gestion", action: #selector(self.openLink), keyEquivalent: "")
+        rulesItem.target = self
+        rulesItem.representedObject = URL(string: "https://github.com/dav-sabbat/pullBar/blob/main/docs/regles-de-gestion.md")
+        rulesItem.image = NSImage(systemSymbolName: "book", accessibilityDescription: nil)
+        rulesItem.toolTip = "Ouvrir les règles du tableau de bord sur GitHub"
+        self.menu.addItem(rulesItem)
         // Remove for app store release
 //        self.menu.addItem(withTitle: "Check for updates...", action: #selector(self.checkForUpdates), keyEquivalent: "")
         self.menu.addItem(withTitle: "About PullBar", action: #selector(self.openAboutWindow), keyEquivalent: "")
