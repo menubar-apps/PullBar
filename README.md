@@ -38,8 +38,12 @@ aucune PR automatiquement.
 | Section | Contenu |
 | --- | --- |
 | **To review** | PR ouvertes dont la review m’est demandée, en excluant mes propres PR. |
-| **My PRs** | Mes PR ouvertes, avec celles qui demandent une action en premier. |
+| **My PRs** | Mes PR ouvertes. |
 | **Just so you know · develop** | Les 3 ou 5 dernières PR mergées vers `develop`, tous dépôts configurés confondus, triées par date de merge. Cette section ne contribue pas aux compteurs. |
+
+Les PR ouvertes sont triées par date de création, de la plus ancienne en haut à
+la plus récente en bas, dans « To review », « My PRs » et les catégories
+personnalisées. Les actions à traiter ne modifient pas cet ordre.
 
 Les lignes montrent notamment le titre, le dépôt sans l’organisation, l’auteur,
 les approvals, l’état de la CI et les discussions. Le calendrier indique le temps

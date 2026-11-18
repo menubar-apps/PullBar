@@ -338,14 +338,11 @@ extension AppDelegate {
             self.reviewURLs = Set((results["reviews"] ?? []).map { $0.node.url })
             self.displayedPRURLs = Set(results.values.flatMap { $0 }.map { $0.node.url })
             for category in categories {
-                var pulls = results[category.id] ?? []
-                if dashboard {
-                    pulls.sort {
-                        let left = !self.reasons(for: $0.node).isEmpty
-                        let right = !self.reasons(for: $1.node).isEmpty
-                        if category.id == "mine", left != right { return left }
-                        return $0.node.createdAt < $1.node.createdAt
+                let pulls = (results[category.id] ?? []).sorted {
+                    if $0.node.createdAt == $1.node.createdAt {
+                        return $0.node.url.absoluteString < $1.node.url.absoluteString
                     }
+                    return $0.node.createdAt < $1.node.createdAt
                 }
                 guard dashboard || !pulls.isEmpty else { continue }
                 let header = "\(category.displayName) (\(pulls.count))"
